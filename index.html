@@ -1765,11 +1765,34 @@
             const excelComp = document.getElementById('excel-target-comp');
             const delGwComp = document.getElementById('delete-gw-comp');
 
+            // Remember whatever was selected before we rebuild the lists, so a
+            // refresh (e.g. after creating a competition or adding a match)
+            // doesn't silently snap these back to the first competition.
+            const prevAddComp = addComp ? addComp.value : '';
+            const prevFilterComp = filterComp ? filterComp.value : '';
+            const prevExcelComp = excelComp ? excelComp.value : '';
+            const prevDelGwComp = delGwComp ? delGwComp.value : '';
+
             const compOptions = db.competitions.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
             if (addComp) addComp.innerHTML = compOptions;
             if (filterComp) filterComp.innerHTML = compOptions;
             if (excelComp) excelComp.innerHTML = compOptions;
             if (delGwComp) delGwComp.innerHTML = compOptions;
+
+            // Restore previous selections where still valid. For the "Add
+            // Match" and "Excel Import" pickers specifically, fall back to
+            // whichever competition is currently being VIEWED (filterComp)
+            // rather than defaulting to the first competition in the list —
+            // that mismatch was why newly added fixtures could end up filed
+            // under the wrong league.
+            const fallbackCompId = (filterComp && db.competitions.some(c => c.id === prevFilterComp))
+                ? prevFilterComp
+                : (db.competitions[0]?.id || '');
+
+            if (addComp) addComp.value = db.competitions.some(c => c.id === prevAddComp) ? prevAddComp : fallbackCompId;
+            if (filterComp) filterComp.value = db.competitions.some(c => c.id === prevFilterComp) ? prevFilterComp : fallbackCompId;
+            if (excelComp) excelComp.value = db.competitions.some(c => c.id === prevExcelComp) ? prevExcelComp : fallbackCompId;
+            if (delGwComp) delGwComp.value = db.competitions.some(c => c.id === prevDelGwComp) ? prevDelGwComp : fallbackCompId;
 
             const selectedCompId = filterComp ? filterComp.value : (db.competitions[0]?.id || '');
             const compMatches = db.matches.filter(m => m.compId === selectedCompId);
@@ -1851,9 +1874,14 @@
                             <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-mono">#${idx + 1}</span>
                             ${m.homeTeam} vs ${m.awayTeam}
                         </span>
-                        <button onclick="confirmDeleteMatch('${m.id}')" class="text-rose-400 hover:text-rose-300 text-xs">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <select onchange="moveMatchToCompetition('${m.id}', this.value)" class="bg-slate-800 border border-slate-700 text-[10px] text-slate-300 rounded px-1.5 py-0.5" title="Move to a different competition">
+                                ${db.competitions.map(c => `<option value="${c.id}" ${c.id === compId ? 'selected' : ''}>${c.name}</option>`).join('')}
+                            </select>
+                            <button onclick="confirmDeleteMatch('${m.id}')" class="text-rose-400 hover:text-rose-300 text-xs">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
@@ -1912,6 +1940,21 @@
             } else {
                 showToast("Please enter valid scores for at least one match.", "warning");
             }
+        }
+
+        // Re-files an existing match under a different competition — for
+        // fixing matches that got added under the wrong league before this
+        // dropdown-defaulting bug was fixed, without losing their odds,
+        // scores, or the predictions everyone already made on them.
+        function moveMatchToCompetition(matchId, newCompId) {
+            const match = db.matches.find(m => m.id === matchId);
+            if (!match || match.compId === newCompId) return;
+
+            match.compId = newCompId;
+            saveDB();
+            const comp = db.competitions.find(c => c.id === newCompId);
+            showToast(`Match moved to ${comp ? comp.name : 'the selected competition'}.`);
+            renderAdminMatches();
         }
 
         function updateOdds(matchId, outcome, value) {
@@ -2099,6 +2142,15 @@
             document.getElementById('admin-comp-season').value = '';
             renderAdminCompetitions();
             populateAdminDropdowns();
+
+            // Jump straight to the new competition everywhere in Admin, so
+            // the next match/import you add lands here, not on whatever
+            // league happened to be selected before.
+            ['admin-add-comp', 'admin-filter-comp', 'excel-target-comp', 'delete-gw-comp'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = newComp.id;
+            });
+            renderAdminMatches();
         }
 
         function renderAdminCompetitions() {
