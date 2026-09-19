@@ -86,6 +86,10 @@
 
                 <!-- User Profile / Auth Actions -->
                 <div class="flex items-center gap-2 sm:gap-3">
+                    <a href="https://nikhilsbeersing.github.io/horse-tipster-challenge/" target="_blank" rel="noopener noreferrer" class="flex text-slate-400 hover:text-white text-xs items-center gap-1 transition pr-2 border-r border-slate-700" title="Horse Tipster Challenge">
+                        <i class="fa-solid fa-horse text-emerald-400"></i> <span class="hidden sm:inline">Horse Tipster</span>
+                    </a>
+
                     <button onclick="openTermsModal()" class="hidden sm:flex text-slate-400 hover:text-white text-xs items-center gap-1 transition pr-2 border-r border-slate-700">
                         <i class="fa-solid fa-shield-halved text-emerald-400"></i> Terms
                     </button>
@@ -1594,8 +1598,18 @@
         function renderLeaderboard() {
             const compFilter = document.getElementById('lb-competition-filter');
             const gwFilter = document.getElementById('lb-gameweek-filter');
-            
+
+            // Remember what was selected BEFORE rebuilding the option lists —
+            // replacing a <select>'s innerHTML resets its selection to the
+            // first option, which was silently snapping the view back to
+            // whichever competition happened to be listed first (e.g. after
+            // picking "Europa", the very next render — triggered by this
+            // dropdown's own onchange — was wiping that choice straight back).
+            const prevCompId = compFilter.value;
+            const prevGw = gwFilter.value;
+
             compFilter.innerHTML = db.competitions.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            if (prevCompId && db.competitions.some(c => c.id === prevCompId)) compFilter.value = prevCompId;
             const selectedCompId = compFilter.value || (db.competitions[0]?.id || '');
 
             const compMatches = db.matches.filter(m => m.compId === selectedCompId);
@@ -1607,6 +1621,7 @@
                 const gwLabel = (comp && comp.gwLabels && comp.gwLabels[g]) ? comp.gwLabels[g] : `Gameweek ${g}`;
                 return `<option value="${g}">${gwLabel}</option>`;
             }).join('');
+            if (prevGw && gws.includes(parseInt(prevGw))) gwFilter.value = prevGw;
             const selectedGW = parseInt(gwFilter.value || gws[0]);
 
             // Public leaderboard: administrators are intentionally excluded.
