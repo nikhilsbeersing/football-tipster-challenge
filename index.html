@@ -77,6 +77,9 @@
                     <button onclick="switchView('app-guide')" id="nav-app-guide" class="px-3 py-2 rounded-lg text-xs lg:text-sm font-medium transition-all duration-200 text-slate-300 hover:text-white hover:bg-slate-700/50">
                         <i class="fa-solid fa-mobile-screen-button mr-1.5"></i>Mobile App
                     </button>
+                    <button onclick="switchView('livescores')" id="nav-livescores" class="px-3 py-2 rounded-lg text-xs lg:text-sm font-medium transition-all duration-200 text-slate-300 hover:text-white hover:bg-slate-700/50">
+                        <i class="fa-solid fa-tower-broadcast mr-1.5"></i>Live Scores
+                    </button>
                     <!-- Admin button hidden by default for non-admins -->
                     <button onclick="switchView('admin')" id="nav-admin" class="hidden px-3 py-2 rounded-lg text-xs lg:text-sm font-medium transition-all duration-200 text-slate-300 hover:text-white hover:bg-slate-700/50 relative">
                         <i class="fa-solid fa-user-gear mr-1.5"></i>Admin
@@ -113,7 +116,7 @@
 
     <!-- Mobile Navigation Bar -->
     <div class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-800/95 backdrop-blur-lg border-t border-slate-700/80 z-40 px-2 py-2">
-        <div id="mobile-nav-grid" class="grid grid-cols-3 gap-1 text-center">
+        <div id="mobile-nav-grid" class="grid grid-cols-4 gap-1 text-center">
             <button onclick="switchView('predict')" id="mobile-nav-predict" class="flex flex-col items-center py-1.5 px-1 rounded-lg text-emerald-400 text-xs font-medium">
                 <i class="fa-solid fa-futbol text-base mb-1"></i>
                 <span class="text-[10px]">Tips</span>
@@ -125,6 +128,10 @@
             <button onclick="switchView('app-guide')" id="mobile-nav-app-guide" class="flex flex-col items-center py-1.5 px-1 rounded-lg text-slate-400 text-xs font-medium">
                 <i class="fa-solid fa-mobile-screen-button text-base mb-1"></i>
                 <span class="text-[10px]">App</span>
+            </button>
+            <button onclick="switchView('livescores')" id="mobile-nav-livescores" class="flex flex-col items-center py-1.5 px-1 rounded-lg text-slate-400 text-xs font-medium">
+                <i class="fa-solid fa-tower-broadcast text-base mb-1"></i>
+                <span class="text-[10px]">Scores</span>
             </button>
             <button onclick="switchView('admin')" id="mobile-nav-admin" class="hidden flex-col items-center py-1.5 px-1 rounded-lg text-slate-400 text-xs font-medium relative">
                 <i class="fa-solid fa-user-gear text-base mb-1"></i>
@@ -308,6 +315,79 @@
                             <!-- Standings Entries -->
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW: Live Scores, Highlights & News (Highlightly API) -->
+        <section id="view-livescores" class="hidden space-y-6">
+            <div class="bg-gradient-to-r from-emerald-900/60 via-slate-800 to-teal-900/60 border border-emerald-500/30 rounded-2xl p-5 shadow-xl space-y-4">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-extrabold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-tower-broadcast text-emerald-400"></i> Football Live Scores
+                        </h2>
+                        <p class="text-[11px] text-slate-400 mt-1">
+                            Powered by <a href="https://highlightly.net" target="_blank" rel="noopener noreferrer" class="text-emerald-400 hover:underline">Highlightly</a>
+                            <span id="ls-updated" class="ml-2"></span>
+                            <span id="ls-quota" class="ml-2 text-slate-500"></span>
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="lsShiftDate(-1)" class="bg-slate-700 hover:bg-slate-600 text-white text-xs px-2.5 py-2 rounded-lg" title="Previous day"><i class="fa-solid fa-chevron-left"></i></button>
+                        <input id="ls-date" type="date" onchange="lsSetDate(this.value)" class="bg-slate-900 border border-slate-600 text-slate-100 text-xs rounded-lg px-2.5 py-2 focus:outline-none focus:border-emerald-500">
+                        <button onclick="lsShiftDate(1)" class="bg-slate-700 hover:bg-slate-600 text-white text-xs px-2.5 py-2 rounded-lg" title="Next day"><i class="fa-solid fa-chevron-right"></i></button>
+                        <button onclick="lsSetDate(lsToday())" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold px-3 py-2 rounded-lg">Today</button>
+                        <button onclick="lsRefresh()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                        <label class="flex items-center gap-1.5 text-[11px] text-slate-400 cursor-pointer" title="Uses 1 API request per minute">
+                            <input id="ls-auto" type="checkbox" onchange="lsToggleAuto(this.checked)" class="accent-emerald-500"> Auto (60s)
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-1 border-t border-slate-700/60 pt-3">
+                    <button id="ls-tab-scores" onclick="lsTab('scores')" class="px-3 py-2 rounded-lg text-xs font-semibold"><i class="fa-solid fa-futbol mr-1.5"></i>Scores</button>
+                    <button id="ls-tab-highlights" onclick="lsTab('highlights')" class="px-3 py-2 rounded-lg text-xs font-semibold"><i class="fa-solid fa-circle-play mr-1.5"></i>Highlights</button>
+                    <button id="ls-tab-news" onclick="lsTab('news')" class="px-3 py-2 rounded-lg text-xs font-semibold"><i class="fa-solid fa-newspaper mr-1.5"></i>News</button>
+                </div>
+            </div>
+
+            <div id="ls-error" class="hidden bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs rounded-xl p-3"></div>
+
+            <!-- Scores -->
+            <div id="ls-panel-scores" class="space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div id="ls-filters" class="flex flex-wrap gap-1.5"></div>
+                    <input id="ls-search" type="search" oninput="lsSetQuery(this.value)" placeholder="Search team, league or country..." class="bg-slate-900 border border-slate-600 text-slate-100 text-xs rounded-lg px-3 py-2 w-full sm:w-72 focus:outline-none focus:border-emerald-500">
+                </div>
+                <div id="ls-matches" class="space-y-4"></div>
+                <div id="ls-more-wrap" class="hidden text-center">
+                    <button onclick="lsLoadMore()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold px-4 py-2 rounded-lg">Load more matches</button>
+                </div>
+            </div>
+
+            <!-- Highlights -->
+            <div id="ls-panel-highlights" class="hidden space-y-4">
+                <div id="ls-highlights" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
+
+            <!-- News -->
+            <div id="ls-panel-news" class="hidden space-y-4">
+                <div class="bg-slate-800 border border-slate-700/80 rounded-xl p-3 text-[11px] text-slate-400 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <span>Highlightly attaches news articles to individual matches. This gathers the articles linked to up to 6 of the day's matches (uses up to 6 API requests).</span>
+                    <button onclick="lsLoadNews(true)" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-lg shrink-0"><i class="fa-solid fa-newspaper mr-1.5"></i>Load match news</button>
+                </div>
+                <div id="ls-news" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+
+            <!-- Match / video modal -->
+            <div id="ls-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm items-start sm:items-center justify-center p-3 overflow-y-auto" onclick="if(event.target===this) lsCloseModal()">
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-2xl my-6 shadow-2xl">
+                    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-700">
+                        <span id="ls-modal-title" class="text-sm font-bold text-white truncate"></span>
+                        <button onclick="lsCloseModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+                    </div>
+                    <div id="ls-modal-body" class="p-4 text-sm"></div>
                 </div>
             </div>
         </section>
@@ -963,7 +1043,7 @@
                     applyingRemoteUpdate = true;
                     db = normalizeDB(payload.new.data);
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
-                    const activeView = ['predict', 'leaderboard', 'app-guide', 'admin', 'login']
+                    const activeView = ['predict', 'leaderboard', 'app-guide', 'livescores', 'admin', 'login']
                         .find(v => !document.getElementById(`view-${v}`)?.classList.contains('hidden'));
                     if (activeView) switchView(activeView);
                     applyingRemoteUpdate = false;
@@ -984,7 +1064,7 @@
                     }
                     updateAuthUI();
                     updatePendingBadges();
-                    const activeView = ['predict', 'leaderboard', 'app-guide', 'admin', 'login']
+                    const activeView = ['predict', 'leaderboard', 'app-guide', 'livescores', 'admin', 'login']
                         .find(v => !document.getElementById(`view-${v}`)?.classList.contains('hidden'));
                     if (activeView) switchView(activeView);
                 })
@@ -1083,7 +1163,7 @@
                 return;
             }
 
-            ['predict', 'leaderboard', 'app-guide', 'admin', 'login'].forEach(v => {
+            ['predict', 'leaderboard', 'app-guide', 'livescores', 'admin', 'login'].forEach(v => {
                 const el = document.getElementById(`view-${v}`);
                 if (el) el.classList.add('hidden');
 
@@ -1122,6 +1202,7 @@
             if (viewName === 'predict') renderPredictions();
             if (viewName === 'leaderboard') renderLeaderboard();
             if (viewName === 'admin') renderAdminConsole();
+            if (viewName === 'livescores') initLiveScores();
         }
 
         // Requirement 1: Update Auth UI to ensure Admin options are hidden for standard Tipster accounts
@@ -1149,7 +1230,7 @@
                         mobileNavAdmin.classList.remove('hidden');
                         mobileNavAdmin.classList.add('flex');
                     }
-                    if (mobileNavGrid) mobileNavGrid.className = "grid grid-cols-4 gap-1 text-center";
+                    if (mobileNavGrid) mobileNavGrid.className = "grid grid-cols-5 gap-1 text-center";
                 } else {
                     adminTag.classList.add('hidden');
                     if (navAdmin) navAdmin.classList.add('hidden');
@@ -1157,7 +1238,7 @@
                         mobileNavAdmin.classList.add('hidden');
                         mobileNavAdmin.classList.remove('flex');
                     }
-                    if (mobileNavGrid) mobileNavGrid.className = "grid grid-cols-3 gap-1 text-center";
+                    if (mobileNavGrid) mobileNavGrid.className = "grid grid-cols-4 gap-1 text-center";
                 }
 
                 authBtnText.innerText = "Logout";
@@ -1169,7 +1250,7 @@
                     mobileNavAdmin.classList.add('hidden');
                     mobileNavAdmin.classList.remove('flex');
                 }
-                if (mobileNavGrid) mobileNavGrid.className = "grid grid-cols-3 gap-1 text-center";
+                if (mobileNavGrid) mobileNavGrid.className = "grid grid-cols-4 gap-1 text-center";
                 authBtnText.innerText = "Login";
             }
 
@@ -2365,6 +2446,432 @@
             await fetchProfiles();
             showToast(currentlyApproved ? "Access revoked." : "Access restored.");
             renderAdminUsers();
+        }
+
+        // =====================================================================
+        // LIVE SCORES, HIGHLIGHTS & NEWS  (Highlightly Football API)
+        // =====================================================================
+        // NOTE: this key is visible to anyone who views your page source.
+        // Keep the free-tier key here only, and rotate it in your Highlightly
+        // dashboard if it is ever abused.
+        const LS_API_KEY  = '93c847e8-4d7f-4828-8ff8-d8ccc2c85def';
+        const LS_BASE     = 'https://sports.highlightly.net';
+        const LS_CACHE_MS = 2 * 60 * 1000;   // reuse results for 2 min to save your daily quota
+        const LS_PAGE     = 100;
+
+        const lsState = {
+            inited: false, date: null, tab: 'scores', filter: 'all', query: '',
+            matches: [], total: 0, offset: 0, highlights: [],
+            loaded: {}, cache: {}, timer: null
+        };
+
+        function lsToday() { return new Date().toLocaleDateString('en-CA'); }
+        function lsEl(id) { return document.getElementById(id); }
+        function lsEsc(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+        function lsUrl(u) { return /^https?:\/\//i.test(u || '') ? u : '#'; }
+        function lsTime(d) {
+            const t = new Date(d);
+            return isNaN(t) ? '--:--' : t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        async function lsFetch(path, params = {}, force = false) {
+            const url = new URL(LS_BASE + path);
+            Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, v); });
+            const key = url.toString();
+            const hit = lsState.cache[key];
+            if (!force && hit && Date.now() - hit.t < LS_CACHE_MS) return hit.json;
+
+            let res;
+            try {
+                res = await fetch(key, { headers: { 'x-rapidapi-key': LS_API_KEY } });
+            } catch (e) {
+                throw new Error("Couldn't reach Highlightly (network or CORS issue). Check your connection and the browser console.");
+            }
+            const remaining = res.headers.get('x-ratelimit-requests-remaining');
+            if (remaining !== null) lsEl('ls-quota').textContent = `· ${remaining} requests left today`;
+            if (res.status === 401 || res.status === 403) throw new Error('Highlightly rejected the API key. Check LS_API_KEY in index.html.');
+            if (res.status === 429) throw new Error('Daily request limit reached. It resets tomorrow, or upgrade your Highlightly plan.');
+            if (!res.ok) throw new Error(`Highlightly returned an error (${res.status}).`);
+            const json = await res.json();
+            lsState.cache[key] = { t: Date.now(), json };
+            return json;
+        }
+
+        function lsShowError(msg) {
+            const box = lsEl('ls-error');
+            if (!msg) { box.classList.add('hidden'); box.textContent = ''; return; }
+            box.textContent = msg;
+            box.classList.remove('hidden');
+        }
+
+        function lsSpinner(text = 'Loading...') {
+            return `<div class="col-span-full text-center text-slate-400 text-xs py-10"><i class="fa-solid fa-spinner fa-spin mr-2"></i>${lsEsc(text)}</div>`;
+        }
+        function lsEmpty(text) {
+            return `<div class="col-span-full text-center text-slate-500 text-xs py-10 bg-slate-800/60 border border-slate-700/60 rounded-xl">${lsEsc(text)}</div>`;
+        }
+
+        // ---- status helpers -------------------------------------------------
+        function lsStatus(m) {
+            const d = String(m?.state?.description || '').trim();
+            const l = d.toLowerCase();
+            if (!l || /not started|scheduled|to be (defined|announced)|tba|upcoming/.test(l)) return { kind: 'upcoming', label: d || 'Scheduled' };
+            if (/finish|full.?time|ended|after (extra|pen)|awarded|walk ?over/.test(l)) return { kind: 'finished', label: d };
+            if (/postpon|cancel|abandon|suspend|interrupt|delay/.test(l)) return { kind: 'other', label: d };
+            const clock = m?.state?.clock;
+            return { kind: 'live', label: clock != null && clock !== '' ? `${d} ${clock}'` : d };
+        }
+        function lsScore(m) {
+            const c = m?.state?.score?.current;
+            if (c == null || c === '') return null;
+            if (typeof c === 'string') return c.replace(/\s*-\s*/, ' - ');
+            if (typeof c === 'object') return `${c.home ?? 0} - ${c.away ?? 0}`;
+            return String(c);
+        }
+        function lsLogo(o) {
+            return o?.logo ? `<img src="${lsEsc(lsUrl(o.logo))}" alt="" loading="lazy" class="w-5 h-5 object-contain shrink-0" onerror="this.style.display='none'">` : '<span class="w-5 h-5 shrink-0"></span>';
+        }
+
+        // ---- date & controls ------------------------------------------------
+        function lsSetDate(d) {
+            if (!d) return;
+            lsState.date = d;
+            lsEl('ls-date').value = d;
+            lsState.loaded = {};
+            lsEl('ls-news').innerHTML = '';
+            lsLoadActiveTab(true);
+        }
+        function lsShiftDate(days) {
+            const dt = new Date(lsState.date + 'T12:00:00');
+            dt.setDate(dt.getDate() + days);
+            lsSetDate(dt.toLocaleDateString('en-CA'));
+        }
+        function lsRefresh() { lsLoadActiveTab(true, true); }
+        function lsSetQuery(q) { lsState.query = q.trim().toLowerCase(); lsRenderMatches(); }
+        function lsSetFilter(f) { lsState.filter = f; lsRenderMatches(); }
+
+        function lsToggleAuto(on) {
+            clearInterval(lsState.timer);
+            lsState.timer = null;
+            if (!on) return;
+            lsState.timer = setInterval(() => {
+                const visible = !lsEl('view-livescores').classList.contains('hidden');
+                if (visible && lsState.tab === 'scores' && !document.hidden) lsLoadScores(true, true);
+            }, 60000);
+        }
+
+        function lsTab(name) {
+            lsState.tab = name;
+            ['scores', 'highlights', 'news'].forEach(t => {
+                lsEl(`ls-panel-${t}`).classList.toggle('hidden', t !== name);
+                lsEl(`ls-tab-${t}`).className = t === name
+                    ? 'px-3 py-2 rounded-lg text-xs font-semibold text-emerald-400 bg-slate-700/70'
+                    : 'px-3 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-700/50';
+            });
+            lsLoadActiveTab(false);
+        }
+
+        function lsLoadActiveTab(reset, force = false) {
+            lsShowError('');
+            if (lsState.tab === 'scores') return lsLoadScores(reset && !lsState.loaded.scores ? false : force, false);
+            if (lsState.tab === 'highlights') return lsLoadHighlights(force);
+            if (lsState.tab === 'news' && force) return lsLoadNews(true);
+        }
+
+        // ---- scores ---------------------------------------------------------
+        async function lsLoadScores(force = false, silent = false) {
+            if (!force && lsState.loaded.scores) { lsRenderMatches(); return; }
+            if (!silent) lsEl('ls-matches').innerHTML = lsSpinner('Loading matches...');
+            try {
+                const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Etc/UTC';
+                const res = await lsFetch('/football/matches', { date: lsState.date, limit: LS_PAGE, offset: 0, timezone: tz }, force);
+                lsState.matches = Array.isArray(res) ? res : (res.data || []);
+                lsState.total = res?.pagination?.totalCount ?? lsState.matches.length;
+                lsState.offset = lsState.matches.length;
+                lsState.loaded.scores = true;
+                lsEl('ls-updated').textContent = `· Updated ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                lsShowError('');
+                lsRenderMatches();
+            } catch (e) {
+                lsShowError(e.message);
+                if (!lsState.matches.length) lsEl('ls-matches').innerHTML = lsEmpty('Could not load matches.');
+            }
+        }
+
+        async function lsLoadMore() {
+            try {
+                const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Etc/UTC';
+                const res = await lsFetch('/football/matches', { date: lsState.date, limit: LS_PAGE, offset: lsState.offset, timezone: tz });
+                const more = Array.isArray(res) ? res : (res.data || []);
+                lsState.matches = lsState.matches.concat(more);
+                lsState.offset += more.length;
+                lsRenderMatches();
+            } catch (e) { lsShowError(e.message); }
+        }
+
+        function lsRenderMatches() {
+            const all = lsState.matches;
+            const counts = { all: all.length, live: 0, upcoming: 0, finished: 0 };
+            all.forEach(m => { const k = lsStatus(m).kind; if (counts[k] !== undefined) counts[k]++; });
+
+            const chips = [['all', 'All'], ['live', 'Live'], ['upcoming', 'Upcoming'], ['finished', 'Finished']];
+            lsEl('ls-filters').innerHTML = chips.map(([k, label]) => `
+                <button onclick="lsSetFilter('${k}')" class="px-3 py-1.5 rounded-full text-[11px] font-semibold border transition ${lsState.filter === k
+                    ? 'bg-emerald-600 border-emerald-500 text-white'
+                    : 'bg-slate-800 border-slate-600 text-slate-300 hover:text-white'}">
+                    ${k === 'live' ? '<span class="inline-block w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse mr-1"></span>' : ''}${label} <span class="opacity-70">${counts[k]}</span>
+                </button>`).join('');
+
+            const q = lsState.query;
+            const list = all.filter(m => {
+                if (lsState.filter !== 'all' && lsStatus(m).kind !== lsState.filter) return false;
+                if (!q) return true;
+                return [m.homeTeam?.name, m.awayTeam?.name, m.league?.name, m.country?.name].some(v => String(v || '').toLowerCase().includes(q));
+            });
+
+            const box = lsEl('ls-matches');
+            if (!list.length) {
+                box.innerHTML = lsEmpty(all.length ? 'No matches match your filter.' : 'No matches found for this date.');
+            } else {
+                const groups = {};
+                list.forEach(m => {
+                    const key = `${m.country?.name || ''}|${m.league?.name || 'Other'}`;
+                    (groups[key] = groups[key] || { league: m.league, country: m.country, items: [] }).items.push(m);
+                });
+                const ordered = Object.values(groups).sort((a, b) => {
+                    const la = a.items.some(m => lsStatus(m).kind === 'live') ? 0 : 1;
+                    const lb = b.items.some(m => lsStatus(m).kind === 'live') ? 0 : 1;
+                    return la - lb || String(a.league?.name).localeCompare(String(b.league?.name));
+                });
+                box.innerHTML = ordered.map(g => `
+                    <div class="bg-slate-800 border border-slate-700/80 rounded-2xl overflow-hidden">
+                        <div class="flex items-center gap-2 px-4 py-2.5 bg-slate-900/60 border-b border-slate-700/60">
+                            ${lsLogo(g.league)}
+                            <span class="text-xs font-bold text-white">${lsEsc(g.league?.name || 'Other')}</span>
+                            <span class="text-[10px] text-slate-500">${lsEsc(g.country?.name || '')}</span>
+                        </div>
+                        <div class="divide-y divide-slate-700/50">
+                            ${g.items.sort((a, b) => new Date(a.date) - new Date(b.date)).map(lsMatchRow).join('')}
+                        </div>
+                    </div>`).join('');
+            }
+            lsEl('ls-more-wrap').classList.toggle('hidden', lsState.offset >= lsState.total);
+        }
+
+        function lsMatchRow(m) {
+            const st = lsStatus(m), sc = lsScore(m);
+            const center = (st.kind === 'upcoming' || !sc)
+                ? `<span class="text-xs font-semibold text-slate-300">${lsEsc(lsTime(m.date))}</span>`
+                : `<span class="text-sm font-extrabold text-white tabular-nums">${lsEsc(sc)}</span>`;
+            const pill = st.kind === 'live'
+                ? `<span class="text-[10px] font-bold text-rose-300 bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 rounded-full flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse"></span>${lsEsc(st.label)}</span>`
+                : `<span class="text-[10px] text-slate-400">${lsEsc(st.kind === 'upcoming' ? '' : st.label)}</span>`;
+            return `
+                <button onclick="lsOpenMatch('${lsEsc(m.id)}')" class="w-full text-left px-4 py-3 hover:bg-slate-700/40 transition flex items-center gap-3">
+                    <div class="flex-1 min-w-0 flex items-center justify-end gap-2">
+                        <span class="text-xs sm:text-sm font-medium text-slate-100 truncate text-right">${lsEsc(m.homeTeam?.name)}</span>${lsLogo(m.homeTeam)}
+                    </div>
+                    <div class="w-16 text-center shrink-0">${center}</div>
+                    <div class="flex-1 min-w-0 flex items-center gap-2">
+                        ${lsLogo(m.awayTeam)}<span class="text-xs sm:text-sm font-medium text-slate-100 truncate">${lsEsc(m.awayTeam?.name)}</span>
+                    </div>
+                    <div class="w-20 flex justify-end shrink-0">${pill}</div>
+                </button>`;
+        }
+
+        // ---- match detail modal --------------------------------------------
+        function lsOpenModal(title, html) {
+            lsEl('ls-modal-title').textContent = title;
+            lsEl('ls-modal-body').innerHTML = html;
+            const m = lsEl('ls-modal');
+            m.classList.remove('hidden'); m.classList.add('flex');
+        }
+        function lsCloseModal() {
+            const m = lsEl('ls-modal');
+            m.classList.add('hidden'); m.classList.remove('flex');
+            lsEl('ls-modal-body').innerHTML = '';   // also stops any playing video
+        }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') lsCloseModal(); });
+
+        async function lsOpenMatch(id) {
+            const base = lsState.matches.find(x => String(x.id) === String(id));
+            lsOpenModal(base ? `${base.homeTeam?.name} vs ${base.awayTeam?.name}` : 'Match', lsSpinner('Loading match details...'));
+            try {
+                const res = await lsFetch(`/football/matches/${id}`);
+                const m = Array.isArray(res) ? res[0] : res;
+                if (!m) throw new Error('No details available for this match.');
+                lsEl('ls-modal-body').innerHTML = lsMatchDetail(m);
+            } catch (e) {
+                lsEl('ls-modal-body').innerHTML = `<p class="text-rose-300 text-xs">${lsEsc(e.message)}</p>`;
+            }
+        }
+
+        function lsMatchDetail(m) {
+            const st = lsStatus(m), sc = lsScore(m);
+            const info = [
+                m.venue?.name ? `<i class="fa-solid fa-location-dot mr-1"></i>${lsEsc(m.venue.name)}${m.venue.city ? ', ' + lsEsc(m.venue.city) : ''}` : '',
+                m.referee?.name ? `<i class="fa-solid fa-flag mr-1"></i>${lsEsc(m.referee.name)}` : '',
+                m.forecast?.temperature ? `<i class="fa-solid fa-cloud-sun mr-1"></i>${lsEsc(m.forecast.temperature)} ${lsEsc(m.forecast.status || '')}` : ''
+            ].filter(Boolean);
+
+            const evIcon = t => {
+                t = String(t || '').toLowerCase();
+                if (t.includes('goal')) return '<i class="fa-solid fa-futbol text-emerald-400"></i>';
+                if (t.includes('yellow')) return '<i class="fa-solid fa-square text-amber-400"></i>';
+                if (t.includes('red')) return '<i class="fa-solid fa-square text-rose-500"></i>';
+                if (t.includes('sub')) return '<i class="fa-solid fa-right-left text-sky-400"></i>';
+                return '<i class="fa-solid fa-circle-info text-slate-400"></i>';
+            };
+            const events = (m.events || []).map(e => `
+                <div class="flex items-center gap-3 py-1.5 text-xs">
+                    <span class="w-10 text-slate-400 tabular-nums">${lsEsc(e.time)}'</span>
+                    <span class="w-5 text-center">${evIcon(e.type)}</span>
+                    <span class="text-slate-100">${lsEsc(e.player || e.type)}${e.assist ? ` <span class="text-slate-500">(${lsEsc(e.assist)})</span>` : ''}</span>
+                    <span class="ml-auto text-[10px] text-slate-500">${lsEsc(e.team?.name || '')}</span>
+                </div>`).join('');
+
+            const pr = m.predictions?.prematch?.[0]?.probabilities;
+            const bar = (label, v) => {
+                const n = Math.max(0, Math.min(100, parseFloat(String(v).replace('%', '')) || 0));
+                return `<div class="text-xs"><div class="flex justify-between text-slate-300 mb-1"><span>${label}</span><span>${lsEsc(v)}</span></div>
+                        <div class="h-1.5 bg-slate-700 rounded-full overflow-hidden"><div class="h-full bg-emerald-500" style="width:${n}%"></div></div></div>`;
+            };
+            const preds = pr ? `
+                <div class="mt-4"><h4 class="text-[11px] uppercase tracking-wider text-slate-400 font-bold mb-2">Pre-match prediction</h4>
+                <div class="grid grid-cols-3 gap-3">${bar(lsEsc(m.homeTeam?.name || 'Home'), pr.home)}${bar('Draw', pr.draw)}${bar(lsEsc(m.awayTeam?.name || 'Away'), pr.away)}</div></div>` : '';
+
+            const news = (m.news || []).slice(0, 5).map(lsNewsCard).join('');
+
+            return `
+                <div class="flex items-center justify-center gap-4 py-2">
+                    <div class="flex-1 flex flex-col items-center gap-1 text-center">${lsLogo(m.homeTeam).replace('w-5 h-5', 'w-10 h-10')}<span class="text-xs font-semibold text-white">${lsEsc(m.homeTeam?.name)}</span></div>
+                    <div class="text-center">
+                        <div class="text-2xl font-extrabold text-white tabular-nums">${lsEsc(sc || lsTime(m.date))}</div>
+                        <div class="text-[10px] ${st.kind === 'live' ? 'text-rose-300' : 'text-slate-400'}">${lsEsc(st.label)}</div>
+                    </div>
+                    <div class="flex-1 flex flex-col items-center gap-1 text-center">${lsLogo(m.awayTeam).replace('w-5 h-5', 'w-10 h-10')}<span class="text-xs font-semibold text-white">${lsEsc(m.awayTeam?.name)}</span></div>
+                </div>
+                <p class="text-center text-[11px] text-slate-500">${lsEsc(m.league?.name || '')}${m.round ? ' · ' + lsEsc(m.round) : ''}</p>
+                ${info.length ? `<p class="text-center text-[11px] text-slate-400 mt-1">${info.join(' &nbsp; ')}</p>` : ''}
+                ${events ? `<div class="mt-4"><h4 class="text-[11px] uppercase tracking-wider text-slate-400 font-bold mb-1">Match events</h4><div class="divide-y divide-slate-700/50">${events}</div></div>` : ''}
+                ${preds}
+                ${news ? `<div class="mt-4"><h4 class="text-[11px] uppercase tracking-wider text-slate-400 font-bold mb-2">Related news</h4><div class="space-y-2">${news}</div></div>` : ''}
+                ${!events && !preds && !news ? '<p class="text-center text-xs text-slate-500 mt-4">No extra details available for this match yet.</p>' : ''}`;
+        }
+
+        // ---- news -----------------------------------------------------------
+        function lsNewsCard(n) {
+            const url = lsUrl(n.url || n.link);
+            const img = n.image || n.imageUrl || n.imgUrl;
+            const when = n.publishedAt || n.publishDate || n.date;
+            const whenTxt = when && !isNaN(new Date(when)) ? new Date(when).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '';
+            return `
+                <a href="${lsEsc(url)}" target="_blank" rel="noopener noreferrer" class="flex gap-3 bg-slate-900/60 hover:bg-slate-900 border border-slate-700/60 rounded-xl p-2.5 transition">
+                    ${img ? `<img src="${lsEsc(lsUrl(img))}" alt="" loading="lazy" class="w-20 h-16 object-cover rounded-lg shrink-0" onerror="this.style.display='none'">` : ''}
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-white leading-snug">${lsEsc(n.title || 'Article')}</p>
+                        <p class="text-[10px] text-slate-500 mt-1">${lsEsc(n.matchLabel || '')}${n.matchLabel && whenTxt ? ' · ' : ''}${lsEsc(whenTxt)}</p>
+                    </div>
+                </a>`;
+        }
+
+        async function lsLoadNews(force = false) {
+            const box = lsEl('ls-news');
+            box.innerHTML = lsSpinner('Gathering match news...');
+            lsShowError('');
+            try {
+                if (!lsState.matches.length) await lsLoadScores(false, true);
+                const rank = { live: 0, finished: 1, upcoming: 2, other: 3 };
+                const pool = [...lsState.matches].sort((a, b) => rank[lsStatus(a).kind] - rank[lsStatus(b).kind]).slice(0, 6);
+                if (!pool.length) { box.innerHTML = lsEmpty('No matches on this date, so there is no news to load.'); return; }
+                const results = await Promise.allSettled(pool.map(m => lsFetch(`/football/matches/${m.id}`, {}, force)));
+                const seen = new Set(), items = [];
+                results.forEach((r, i) => {
+                    if (r.status !== 'fulfilled') return;
+                    const d = Array.isArray(r.value) ? r.value[0] : r.value;
+                    (d?.news || []).forEach(n => {
+                        const u = n.url || n.link || n.title;
+                        if (seen.has(u)) return;
+                        seen.add(u);
+                        items.push({ ...n, matchLabel: `${pool[i].homeTeam?.name} vs ${pool[i].awayTeam?.name}` });
+                    });
+                });
+                const failed = results.find(r => r.status === 'rejected');
+                if (failed && !items.length) throw failed.reason;
+                box.innerHTML = items.length
+                    ? items.map(lsNewsCard).join('')
+                    : lsEmpty('No news articles are linked to this date\'s top matches. Try a bigger match day.');
+            } catch (e) {
+                lsShowError(e.message);
+                box.innerHTML = lsEmpty('Could not load news.');
+            }
+        }
+
+        // ---- highlights -----------------------------------------------------
+        async function lsLoadHighlights(force = false) {
+            const box = lsEl('ls-highlights');
+            if (!force && lsState.loaded.highlights) return;
+            box.innerHTML = lsSpinner('Loading highlights...');
+            try {
+                const res = await lsFetch('/football/highlights', { date: lsState.date, limit: 40 }, force);
+                lsState.highlights = Array.isArray(res) ? res : (res.data || []);
+                lsState.loaded.highlights = true;
+                lsShowError('');
+                box.innerHTML = lsState.highlights.length
+                    ? lsState.highlights.map((h, i) => lsHighlightCard(h, i)).join('')
+                    : lsEmpty('No highlights for this date yet. Verified clips usually appear within 48 hours after a match.');
+            } catch (e) {
+                lsShowError(e.message);
+                box.innerHTML = lsEmpty('Could not load highlights.');
+            }
+        }
+
+        function lsHighlightCard(h, i) {
+            const img = h.imgUrl || h.thumbnail || h.image;
+            const verified = String(h.type || '').toUpperCase() === 'VERIFIED';
+            const mt = h.match;
+            const label = mt ? `${mt.homeTeam?.name || ''} vs ${mt.awayTeam?.name || ''}` : '';
+            return `
+                <button onclick="lsPlayHighlight(${i})" class="text-left bg-slate-800 hover:bg-slate-700/60 border border-slate-700/80 rounded-2xl overflow-hidden transition group">
+                    <div class="relative h-36 bg-slate-900 flex items-center justify-center">
+                        ${img ? `<img src="${lsEsc(lsUrl(img))}" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover opacity-80" onerror="this.style.display='none'">` : ''}
+                        <i class="fa-solid fa-circle-play text-4xl text-white/90 relative group-hover:scale-110 transition"></i>
+                        ${verified ? '<span class="absolute top-2 left-2 text-[9px] font-bold bg-emerald-500/90 text-white px-1.5 py-0.5 rounded">VERIFIED</span>' : ''}
+                    </div>
+                    <div class="p-3">
+                        <p class="text-xs font-semibold text-white leading-snug line-clamp-2">${lsEsc(h.title || 'Highlight')}</p>
+                        <p class="text-[10px] text-slate-400 mt-1.5 truncate">${lsEsc(label)}</p>
+                        <p class="text-[10px] text-slate-500 capitalize">${lsEsc(h.source || '')}${h.channel ? ' · ' + lsEsc(h.channel) : ''}</p>
+                    </div>
+                </button>`;
+        }
+
+        function lsPlayHighlight(i) {
+            const h = lsState.highlights[i];
+            if (!h) return;
+            if (h.embedUrl) {
+                lsOpenModal(h.title || 'Highlight', `
+                    <div class="aspect-video w-full rounded-xl overflow-hidden bg-black">
+                        <iframe src="${lsEsc(lsUrl(h.embedUrl))}" class="w-full h-full" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+                    </div>
+                    <a href="${lsEsc(lsUrl(h.url))}" target="_blank" rel="noopener noreferrer" class="inline-block mt-3 text-xs text-emerald-400 hover:underline">Open original source <i class="fa-solid fa-arrow-up-right-from-square ml-1"></i></a>`);
+            } else {
+                window.open(lsUrl(h.url), '_blank', 'noopener');
+            }
+        }
+
+        // ---- entry point (called by switchView) -----------------------------
+        function initLiveScores() {
+            if (!lsState.inited) {
+                lsState.inited = true;
+                lsState.date = lsToday();
+                lsEl('ls-date').value = lsState.date;
+                lsTab('scores');          // also triggers the first load
+                return;
+            }
+            lsLoadActiveTab(false);
         }
 
         window.onload = async function() {
