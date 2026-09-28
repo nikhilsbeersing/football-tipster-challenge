@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nikhil S. Beersing - Football Tipster Challenge</title>
+    <!-- App icon (Mauritius flag + football) and install-to-home-screen support -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 512 512%22%3E%3Cdefs%3E%3CclipPath id=%22mf-r%22%3E%3Crect width=%22512%22 height=%22512%22 rx=%2297%22/%3E%3C/clipPath%3E%3CclipPath id=%22mf-b%22%3E%3Ccircle cx=%22256.0%22 cy=%22256.0%22 r=%22174.1%22/%3E%3C/clipPath%3E%3C/defs%3E%3Cg clip-path=%22url(%23mf-r)%22%3E%3Crect y=%220%22 width=%22512%22 height=%22128%22 fill=%22%23EA2839%22/%3E%3Crect y=%22128%22 width=%22512%22 height=%22128%22 fill=%22%231A206D%22/%3E%3Crect y=%22256%22 width=%22512%22 height=%22128%22 fill=%22%23FFD500%22/%3E%3Crect y=%22384%22 width=%22512%22 height=%22128%22 fill=%22%2300A551%22/%3E%3Ccircle cx=%22256.0%22 cy=%22264.7%22 r=%22174.1%22 fill=%22%23000%22 opacity=%22.27%22/%3E%3Ccircle cx=%22256.0%22 cy=%22256.0%22 r=%22174.1%22 fill=%22%23fff%22/%3E%3Cg clip-path=%22url(%23mf-b)%22 stroke=%22%230f172a%22 stroke-width=%228.7%22 stroke-linecap=%22round%22%3E%3Cline x1=%22256.0%22 y1=%22196.8%22 x2=%22256.0%22 y2=%22153.3%22/%3E%3Cline x1=%22312.3%22 y1=%22237.7%22 x2=%22353.7%22 y2=%22224.3%22/%3E%3Cline x1=%22290.8%22 y1=%22303.9%22 x2=%22316.4%22 y2=%22339.1%22/%3E%3Cline x1=%22221.2%22 y1=%22303.9%22 x2=%22195.6%22 y2=%22339.1%22/%3E%3Cline x1=%22199.7%22 y1=%22237.7%22 x2=%22158.3%22 y2=%22224.3%22/%3E%3Cline x1=%22312.3%22 y1=%22112.4%22 x2=%22375.2%22 y2=%22158.1%22/%3E%3Cline x1=%22410.0%22 y1=%22265.2%22 x2=%22385.9%22 y2=%22339.1%22/%3E%3Cline x1=%22294.9%22 y1=%22405.3%22 x2=%22217.1%22 y2=%22405.3%22/%3E%3Cline x1=%22126.1%22 y1=%22339.1%22 x2=%22102.0%22 y2=%22265.2%22/%3E%3Cline x1=%22136.8%22 y1=%22158.1%22 x2=%22199.7%22 y2=%22112.4%22/%3E%3C/g%3E%3Cg clip-path=%22url(%23mf-b)%22 fill=%22%230f172a%22%3E%3Cpolygon points=%22256.0,153.3 199.7,112.4 221.2,46.2 290.8,46.2 312.3,112.4%22/%3E%3Cpolygon points=%22353.7,224.3 375.2,158.1 444.8,158.1 466.3,224.3 410.0,265.2%22/%3E%3Cpolygon points=%22316.4,339.1 385.9,339.1 407.4,405.3 351.2,446.2 294.9,405.3%22/%3E%3Cpolygon points=%22195.6,339.1 217.1,405.3 160.8,446.2 104.6,405.3 126.1,339.1%22/%3E%3Cpolygon points=%22158.3,224.3 102.0,265.2 45.7,224.3 67.2,158.1 136.8,158.1%22/%3E%3Cpolygon points=%22256.0,196.8 312.3,237.7 290.8,303.9 221.2,303.9 199.7,237.7%22/%3E%3C/g%3E%3Ccircle cx=%22256.0%22 cy=%22256.0%22 r=%22168.9%22 fill=%22none%22 stroke=%22%230f172a%22 stroke-width=%2210.4%22/%3E%3C/g%3E%3C/svg%3E">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Tipster Challenge">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -50,9 +60,7 @@
             <div class="flex items-center justify-between h-16">
                 <!-- Platform Branding -->
                 <div class="flex items-center gap-3 cursor-pointer" onclick="switchView('predict')">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-lg shadow-emerald-900/30">
-                        <i class="fa-solid fa-trophy text-lg"></i>
-                    </div>
+                    <div class="w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-emerald-900/30" aria-label="Mauritius flag with a football"><svg class="w-10 h-10 block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><clipPath id="mh-r"><rect width="512" height="512" rx="97"/></clipPath><clipPath id="mh-b"><circle cx="256.0" cy="256.0" r="174.1"/></clipPath></defs><g clip-path="url(#mh-r)"><rect y="0" width="512" height="128" fill="#EA2839"/><rect y="128" width="512" height="128" fill="#1A206D"/><rect y="256" width="512" height="128" fill="#FFD500"/><rect y="384" width="512" height="128" fill="#00A551"/><circle cx="256.0" cy="264.7" r="174.1" fill="#000" opacity=".27"/><circle cx="256.0" cy="256.0" r="174.1" fill="#fff"/><g clip-path="url(#mh-b)" stroke="#0f172a" stroke-width="8.7" stroke-linecap="round"><line x1="256.0" y1="196.8" x2="256.0" y2="153.3"/><line x1="312.3" y1="237.7" x2="353.7" y2="224.3"/><line x1="290.8" y1="303.9" x2="316.4" y2="339.1"/><line x1="221.2" y1="303.9" x2="195.6" y2="339.1"/><line x1="199.7" y1="237.7" x2="158.3" y2="224.3"/><line x1="312.3" y1="112.4" x2="375.2" y2="158.1"/><line x1="410.0" y1="265.2" x2="385.9" y2="339.1"/><line x1="294.9" y1="405.3" x2="217.1" y2="405.3"/><line x1="126.1" y1="339.1" x2="102.0" y2="265.2"/><line x1="136.8" y1="158.1" x2="199.7" y2="112.4"/></g><g clip-path="url(#mh-b)" fill="#0f172a"><polygon points="256.0,153.3 199.7,112.4 221.2,46.2 290.8,46.2 312.3,112.4"/><polygon points="353.7,224.3 375.2,158.1 444.8,158.1 466.3,224.3 410.0,265.2"/><polygon points="316.4,339.1 385.9,339.1 407.4,405.3 351.2,446.2 294.9,405.3"/><polygon points="195.6,339.1 217.1,405.3 160.8,446.2 104.6,405.3 126.1,339.1"/><polygon points="158.3,224.3 102.0,265.2 45.7,224.3 67.2,158.1 136.8,158.1"/><polygon points="256.0,196.8 312.3,237.7 290.8,303.9 221.2,303.9 199.7,237.7"/></g><circle cx="256.0" cy="256.0" r="168.9" fill="none" stroke="#0f172a" stroke-width="10.4"/></g></svg></div>
                     <div>
                         <h1 class="font-bold text-base sm:text-lg leading-tight text-white tracking-wide">
                             Nikhil S. Beersing
@@ -89,6 +97,10 @@
                     <a href="https://nikhilsbeersing.github.io/horse-tipster-challenge/" target="_blank" rel="noopener noreferrer" class="flex text-slate-400 hover:text-white text-xs items-center gap-1 transition pr-2 border-r border-slate-700" title="Horse Tipster Challenge">
                         <i class="fa-solid fa-horse text-emerald-400"></i> <span class="hidden sm:inline">Horse Tipster</span>
                     </a>
+
+                    <button id="install-header-btn" onclick="showInstallPrompt(true)" class="hidden flex text-slate-400 hover:text-white text-xs items-center gap-1 transition pr-2 border-r border-slate-700" title="Add to home screen">
+                        <i class="fa-solid fa-download text-emerald-400"></i> <span class="hidden sm:inline">Install</span>
+                    </button>
 
                     <button onclick="openTermsModal()" class="hidden sm:flex text-slate-400 hover:text-white text-xs items-center gap-1 transition pr-2 border-r border-slate-700">
                         <i class="fa-solid fa-shield-halved text-emerald-400"></i> Terms
@@ -743,6 +755,27 @@
         </div>
     </div>
 
+    <!-- INSTALL APP MODAL -->
+    <div id="install-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
+            <div class="w-16 h-16 mx-auto rounded-2xl overflow-hidden shadow-lg shadow-emerald-900/30"><svg class="w-16 h-16 block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><clipPath id="mm-r"><rect width="512" height="512" rx="97"/></clipPath><clipPath id="mm-b"><circle cx="256.0" cy="256.0" r="174.1"/></clipPath></defs><g clip-path="url(#mm-r)"><rect y="0" width="512" height="128" fill="#EA2839"/><rect y="128" width="512" height="128" fill="#1A206D"/><rect y="256" width="512" height="128" fill="#FFD500"/><rect y="384" width="512" height="128" fill="#00A551"/><circle cx="256.0" cy="264.7" r="174.1" fill="#000" opacity=".27"/><circle cx="256.0" cy="256.0" r="174.1" fill="#fff"/><g clip-path="url(#mm-b)" stroke="#0f172a" stroke-width="8.7" stroke-linecap="round"><line x1="256.0" y1="196.8" x2="256.0" y2="153.3"/><line x1="312.3" y1="237.7" x2="353.7" y2="224.3"/><line x1="290.8" y1="303.9" x2="316.4" y2="339.1"/><line x1="221.2" y1="303.9" x2="195.6" y2="339.1"/><line x1="199.7" y1="237.7" x2="158.3" y2="224.3"/><line x1="312.3" y1="112.4" x2="375.2" y2="158.1"/><line x1="410.0" y1="265.2" x2="385.9" y2="339.1"/><line x1="294.9" y1="405.3" x2="217.1" y2="405.3"/><line x1="126.1" y1="339.1" x2="102.0" y2="265.2"/><line x1="136.8" y1="158.1" x2="199.7" y2="112.4"/></g><g clip-path="url(#mm-b)" fill="#0f172a"><polygon points="256.0,153.3 199.7,112.4 221.2,46.2 290.8,46.2 312.3,112.4"/><polygon points="353.7,224.3 375.2,158.1 444.8,158.1 466.3,224.3 410.0,265.2"/><polygon points="316.4,339.1 385.9,339.1 407.4,405.3 351.2,446.2 294.9,405.3"/><polygon points="195.6,339.1 217.1,405.3 160.8,446.2 104.6,405.3 126.1,339.1"/><polygon points="158.3,224.3 102.0,265.2 45.7,224.3 67.2,158.1 136.8,158.1"/><polygon points="256.0,196.8 312.3,237.7 290.8,303.9 221.2,303.9 199.7,237.7"/></g><circle cx="256.0" cy="256.0" r="168.9" fill="none" stroke="#0f172a" stroke-width="10.4"/></g></svg></div>
+            <div>
+                <h3 class="text-base font-bold text-white">Add to your home screen</h3>
+                <p class="text-xs text-slate-400 mt-1">Open the Tipster Challenge in one tap, full screen, just like an app.</p>
+            </div>
+            <div id="install-steps" class="text-left text-xs text-slate-300 leading-relaxed"></div>
+            <div class="flex flex-col gap-2">
+                <button id="install-now-btn" onclick="installApp()" class="hidden w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl text-xs">
+                    <i class="fa-solid fa-download mr-1.5"></i> Install now
+                </button>
+                <button id="install-close-btn" onclick="closeInstallModal()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold py-2.5 rounded-xl text-xs">
+                    Maybe later
+                </button>
+                <button onclick="closeInstallModal(); switchView('app-guide');" class="text-[11px] text-emerald-400 hover:underline">See the full install guide</button>
+            </div>
+        </div>
+    </div>
+
     <!-- USER PREDICTIONS INSPECT MODAL -->
     <div id="user-preds-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
@@ -1090,6 +1123,7 @@
                 closeTermsModal(true);
                 if (currentUser.role === 'admin') switchView('admin');
                 else switchView('predict');
+                setTimeout(maybePromptInstall, 700);      // first login: offer "Add to home screen"
             } else {
                 closeTermsModal(true);
                 showToast("Terms accepted.");
@@ -2532,7 +2566,7 @@
                 display_name: username,
                 role,
                 approved: true,
-                accepted_terms: true
+                accepted_terms: false
             });
 
             await tempClient.auth.signOut();
@@ -2662,6 +2696,112 @@
 
         function escHtml(s) {
             return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        // =====================================================================
+        // INSTALL TO HOME SCREEN (PWA)
+        // =====================================================================
+        let deferredInstallPrompt = null;              // set by Chrome/Edge/Android when the site is installable
+        const INSTALL_SEEN_KEY = 'ftc_install_prompted';
+
+        window.addEventListener('beforeinstallprompt', e => {
+            e.preventDefault();                        // keep it for our own button
+            deferredInstallPrompt = e;
+            updateInstallButton();
+        });
+        window.addEventListener('appinstalled', () => {
+            deferredInstallPrompt = null;
+            closeInstallModal();
+            updateInstallButton();
+            showToast("App installed! Find it on your home screen.");
+        });
+
+        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+            window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+        }
+
+        function isStandalone() {
+            return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        }
+        function isIOS() {
+            return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        }
+        function isIOSSafari() {
+            return isIOS() && /safari/i.test(navigator.userAgent) && !/crios|fxios|edgios|opios/i.test(navigator.userAgent);
+        }
+
+        function updateInstallButton() {
+            const btn = document.getElementById('install-header-btn');
+            if (btn) btn.classList.toggle('hidden', isStandalone());
+        }
+        document.addEventListener('DOMContentLoaded', updateInstallButton);
+
+        function installStep(n, html) {
+            return `<li class="flex items-start gap-2.5"><span class="shrink-0 w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold flex items-center justify-center mt-0.5">${n}</span><span>${html}</span></li>`;
+        }
+
+        function showInstallPrompt(manual = false) {
+            if (isStandalone()) {
+                if (manual) showToast("You're already using the installed app.");
+                return;
+            }
+            const steps = document.getElementById('install-steps');
+            const installBtn = document.getElementById('install-now-btn');
+            const closeBtn = document.getElementById('install-close-btn');
+            installBtn.classList.add('hidden');
+            closeBtn.textContent = 'Maybe later';
+
+            if (deferredInstallPrompt) {
+                steps.innerHTML = `<p class="text-center text-slate-300">Tap <strong>Install now</strong> and confirm. The app icon will appear on your home screen.</p>`;
+                installBtn.classList.remove('hidden');
+            } else if (isIOSSafari()) {
+                steps.innerHTML = `<ol class="space-y-2.5">
+                    ${installStep(1, 'Tap the <strong>Share</strong> button <i class="fa-solid fa-arrow-up-from-bracket text-sky-400"></i> in Safari\'s toolbar.')}
+                    ${installStep(2, 'Scroll down and tap <strong>"Add to Home Screen"</strong> <i class="fa-regular fa-square-plus text-sky-400"></i>.')}
+                    ${installStep(3, 'Tap <strong>Add</strong> in the top corner.')}
+                </ol>`;
+                closeBtn.textContent = 'Got it';
+            } else if (isIOS()) {
+                steps.innerHTML = `<ol class="space-y-2.5">
+                    ${installStep(1, 'Open this page in <strong>Safari</strong>.')}
+                    ${installStep(2, 'Tap <strong>Share</strong> <i class="fa-solid fa-arrow-up-from-bracket text-sky-400"></i>, then <strong>"Add to Home Screen"</strong>.')}
+                    ${installStep(3, 'Tap <strong>Add</strong>.')}
+                </ol>`;
+                closeBtn.textContent = 'Got it';
+            } else {
+                steps.innerHTML = `<ol class="space-y-2.5">
+                    ${installStep(1, 'Open your browser menu <i class="fa-solid fa-ellipsis-vertical text-slate-400"></i> (top right).')}
+                    ${installStep(2, 'Choose <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.')}
+                    ${installStep(3, 'Confirm, and the icon appears on your home screen.')}
+                </ol>`;
+                closeBtn.textContent = 'Got it';
+            }
+            document.getElementById('install-modal').classList.remove('hidden');
+        }
+
+        function closeInstallModal() {
+            document.getElementById('install-modal').classList.add('hidden');
+        }
+
+        async function installApp() {
+            if (!deferredInstallPrompt) { showInstallPrompt(true); return; }
+            const promptEvent = deferredInstallPrompt;
+            deferredInstallPrompt = null;
+            promptEvent.prompt();
+            try { await promptEvent.userChoice; } catch (e) {}
+            closeInstallModal();
+            updateInstallButton();
+        }
+
+        // Called once, right after a person accepts the Terms on their first login.
+        // The header "Install" button lets them bring it back any time.
+        function maybePromptInstall() {
+            if (isStandalone()) return;
+            try {
+                if (localStorage.getItem(INSTALL_SEEN_KEY)) return;
+                localStorage.setItem(INSTALL_SEEN_KEY, '1');
+            } catch (e) {}
+            showInstallPrompt(false);
         }
 
         window.onload = async function() {
