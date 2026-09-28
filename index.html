@@ -218,7 +218,8 @@
                 </div>
 
                 <div class="flex flex-wrap items-center gap-3">
-                    <div class="flex-1 sm:flex-none">
+                    <!-- Competition is now chosen with the tabs below; this select stays (hidden) as the single source of truth -->
+                    <div class="hidden">
                         <label class="block text-[10px] text-slate-400 uppercase font-semibold mb-1">Competition</label>
                         <select id="filter-competition" onchange="renderPredictions()" class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg py-2 px-3 focus:outline-none focus:border-emerald-500">
                         </select>
@@ -226,11 +227,14 @@
 
                     <div class="flex-1 sm:flex-none">
                         <label class="block text-[10px] text-slate-400 uppercase font-semibold mb-1">Gameweek</label>
-                        <select id="filter-gameweek" onchange="renderPredictions()" class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg py-2 px-3 focus:outline-none focus:border-emerald-500">
+                        <select id="filter-gameweek" onchange="setPredGw(this.value)" class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg py-2 px-3 focus:outline-none focus:border-emerald-500">
                         </select>
                     </div>
                 </div>
             </div>
+
+            <!-- One tab per competition so several can run side by side -->
+            <div id="pred-comp-tabs" class="flex gap-2 overflow-x-auto custom-scrollbar pb-1"></div>
 
             <div id="deadline-banner" class="bg-slate-800/60 border border-amber-500/30 rounded-xl p-3 px-4 flex flex-wrap items-center justify-between gap-2 text-xs">
                 <div class="flex items-center gap-2 text-amber-400 font-medium">
@@ -278,7 +282,7 @@
                     <h2 class="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
                         <i class="fa-solid fa-ranking-star text-amber-400"></i> Tipster Leaderboard
                     </h2>
-                    <p class="text-xs text-slate-400 mt-1">Click any user's name after deadline to view their predictions for the selected week.</p>
+                    <p id="lb-subtitle" class="text-xs text-slate-400 mt-1">Click any user's name after deadline to view their predictions for the selected week.</p>
                 </div>
 
                 <div class="flex items-center gap-3">
@@ -299,17 +303,17 @@
                 </div>
             </div>
 
+            <!-- Combined view: pick which competitions count towards the total -->
+            <div id="lb-comp-picker" class="hidden bg-slate-800 border border-slate-700/80 rounded-2xl p-4 shadow-xl">
+                <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-2">Competitions counted in the combined total</p>
+                <div id="lb-comp-chips" class="flex flex-wrap gap-2"></div>
+            </div>
+
             <div class="bg-slate-800 border border-slate-700/80 rounded-2xl shadow-xl overflow-hidden">
                 <div class="overflow-x-auto custom-scrollbar">
                     <table class="w-full text-left text-xs">
                         <thead class="bg-slate-900/80 uppercase tracking-wider text-slate-400 border-b border-slate-700">
-                            <tr>
-                                <th class="py-3.5 px-4 text-center w-12">Rank</th>
-                                <th class="py-3.5 px-4">Tipster Name</th>
-                                <th class="py-3.5 px-4 text-center">Correct Picks</th>
-                                <th class="py-3.5 px-4 text-center">Accuracy</th>
-                                <th class="py-3.5 px-4 text-right pr-6" id="lb-table-points-col">Selected Week Points</th>
-                            </tr>
+                            <tr id="lb-thead-row"></tr>
                         </thead>
                         <tbody id="leaderboard-tbody" class="divide-y divide-slate-700/60 text-slate-200">
                             <!-- Standings Entries -->
@@ -620,6 +624,20 @@
 
             <!-- ADMIN TAB: Pending Approvals -->
             <div id="admin-sec-approvals" class="hidden space-y-6">
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-lg">
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-user-check text-emerald-400"></i> Auto-accept new users</h3>
+                            <p class="text-[11px] text-slate-400 mt-1">When on, new sign-up requests are approved automatically while an admin has the site open. Turn it off to review each request yourself.</p>
+                            <p id="auto-accept-status" class="text-[11px] font-semibold mt-2 text-slate-300"></p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input id="admin-auto-accept" type="checkbox" class="sr-only peer" onchange="toggleAutoAccept(this.checked)">
+                            <div class="w-11 h-6 bg-slate-600 peer-checked:bg-emerald-500 rounded-full transition after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-5 after:h-5 after:bg-white after:rounded-full after:transition peer-checked:after:translate-x-5"></div>
+                        </label>
+                    </div>
+                </div>
+
                 <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-lg space-y-4">
                     <h3 class="text-sm font-bold text-white border-b border-slate-700 pb-2 flex items-center justify-between">
                         <span>Pending Tipster Account Requests</span>
@@ -1043,6 +1061,7 @@
                     applyingRemoteUpdate = true;
                     db = normalizeDB(payload.new.data);
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+                    autoApprovePending();
                     const activeView = ['predict', 'leaderboard', 'app-guide', 'livescores', 'admin', 'login']
                         .find(v => !document.getElementById(`view-${v}`)?.classList.contains('hidden'));
                     if (activeView) switchView(activeView);
@@ -1064,6 +1083,7 @@
                     }
                     updateAuthUI();
                     updatePendingBadges();
+                    autoApprovePending();
                     const activeView = ['predict', 'leaderboard', 'app-guide', 'livescores', 'admin', 'login']
                         .find(v => !document.getElementById(`view-${v}`)?.classList.contains('hidden'));
                     if (activeView) switchView(activeView);
@@ -1421,6 +1441,93 @@
             fetchProfiles();
         }
 
+        // ---- Predictions: one tab per competition ----
+        const predGwByComp = {};   // the gameweek last chosen inside each competition tab
+
+        function gwsForComp(compId) {
+            return [...new Set(db.matches.filter(m => m.compId === compId).map(m => m.gameweek))].sort((a, b) => a - b);
+        }
+
+        // The gameweek that matters right now for one competition: the earliest
+        // one that can still be tipped, otherwise the earliest awaiting results,
+        // otherwise the last one played. Worked out per competition so two
+        // competitions running together never fight over the same week number.
+        function defaultGwForComp(compId) {
+            const ms = db.matches.filter(m => m.compId === compId);
+            if (!ms.length) return 1;
+            const now = new Date();
+            const open = ms.filter(m => m.status !== 'FINISHED' && new Date(m.deadline) > now).map(m => m.gameweek);
+            if (open.length) return Math.min(...open);
+            const waiting = ms.filter(m => m.status !== 'FINISHED').map(m => m.gameweek);
+            if (waiting.length) return Math.min(...waiting);
+            return Math.max(...ms.map(m => m.gameweek));
+        }
+
+        function gwForComp(compId) {
+            const gws = gwsForComp(compId);
+            const chosen = predGwByComp[compId];
+            if (chosen !== undefined && gws.includes(chosen)) return chosen;
+            return gws.length ? defaultGwForComp(compId) : 1;
+        }
+
+        function setPredComp(compId) {
+            document.getElementById('filter-competition').value = compId;
+            isEditModeActive = false;
+            renderPredictions();
+        }
+
+        function setPredGw(value) {
+            const compId = document.getElementById('filter-competition').value;
+            predGwByComp[compId] = parseInt(value);
+            renderPredictions();
+        }
+
+        function fmtCountdown(ms) {
+            if (ms <= 0) return 'now';
+            const d = Math.floor(ms / 86400000), h = Math.floor((ms % 86400000) / 3600000), m = Math.floor((ms % 3600000) / 60000);
+            if (d > 0) return `${d}d ${h}h`;
+            if (h > 0) return `${h}h ${m}m`;
+            return `${Math.max(m, 1)}m`;
+        }
+
+        function renderPredCompTabs() {
+            const box = document.getElementById('pred-comp-tabs');
+            if (!box) return;
+            if (db.competitions.length === 0) { box.innerHTML = ''; return; }
+
+            const activeId = document.getElementById('filter-competition')?.value;
+            const now = new Date();
+            const userTips = currentUser ? (db.predictions[currentUser.username] || {}) : {};
+
+            const items = db.competitions.map(c => {
+                const ms = db.matches.filter(m => m.compId === c.id);
+                const ended = ms.length > 0 && ms.every(m => m.status === 'FINISHED');
+                const open = ms.filter(m => m.status !== 'FINISHED' && new Date(m.deadline) > now);
+                const toPick = currentUser ? open.filter(m => !(currentDraftTips[m.id] ?? userTips[m.id])).length : 0;
+                const next = open.length ? Math.min(...open.map(m => new Date(m.deadline).getTime())) : null;
+                return { c, ms, ended, toPick, next };
+            }).sort((a, b) => (a.ended ? 1 : 0) - (b.ended ? 1 : 0));   // finished competitions sink to the end
+
+            box.innerHTML = items.map(({ c, ms, ended, toPick, next }) => {
+                const isActive = c.id === activeId;
+                let line = 'No fixtures yet';
+                if (ms.length) line = ended ? 'Competition ended' : (next !== null ? `Next lock in ${fmtCountdown(next - now)}` : 'Locked · awaiting results');
+                const badge = ended
+                    ? '<span class="text-[9px] font-bold bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">ENDED</span>'
+                    : (toPick > 0 ? `<span class="text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded">${toPick} to pick</span>` : '');
+                return `
+                    <button onclick="setPredComp('${c.id}')" class="shrink-0 min-w-[150px] text-left px-4 py-2.5 rounded-xl border transition ${isActive
+                        ? 'bg-emerald-600/15 border-emerald-500 shadow-lg shadow-emerald-900/20'
+                        : 'bg-slate-800 border-slate-700 hover:border-slate-500'}">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-xs font-bold ${isActive ? 'text-emerald-300' : 'text-white'} truncate max-w-[130px]">${lsEsc(c.name)}</span>
+                            ${badge}
+                        </div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">${lsEsc(c.season || '')} · ${line}</div>
+                    </button>`;
+            }).join('');
+        }
+
         function populateFilterDropdowns() {
             const compSelect = document.getElementById('filter-competition');
             const gwSelect = document.getElementById('filter-gameweek');
@@ -1428,28 +1535,25 @@
             if (!compSelect || !gwSelect) return;
 
             const currentComp = compSelect.value;
-            const currentGw = gwSelect.value;
 
             compSelect.innerHTML = db.competitions.map(c => `<option value="${c.id}">${c.name} (${c.season})</option>`).join('');
-            
+            if (currentComp && db.competitions.some(c => c.id === currentComp)) compSelect.value = currentComp;
+
             const selectedCompId = compSelect.value || (db.competitions[0] ? db.competitions[0].id : '');
-            const compMatches = db.matches.filter(m => m.compId === selectedCompId);
-            const gws = [...new Set(compMatches.map(m => m.gameweek))].sort((a,b) => a - b);
-            
+            const gws = gwsForComp(selectedCompId);
             if (gws.length === 0) gws.push(1);
 
+            const comp = db.competitions.find(c => c.id === selectedCompId);
             gwSelect.innerHTML = gws.map(g => {
-                const comp = db.competitions.find(c => c.id === selectedCompId);
                 const gwLabel = (comp && comp.gwLabels && comp.gwLabels[g]) ? comp.gwLabels[g] : `Gameweek ${g}`;
                 return `<option value="${g}">${gwLabel}</option>`;
             }).join('');
-
-            if (currentComp && db.competitions.some(c => c.id === currentComp)) compSelect.value = currentComp;
-            if (currentGw && gws.includes(parseInt(currentGw))) gwSelect.value = currentGw;
+            gwSelect.value = String(gwForComp(selectedCompId));
         }
 
         function renderPredictions() {
             populateFilterDropdowns();
+            renderPredCompTabs();
 
             const compSelect = document.getElementById('filter-competition');
             const gwSelect = document.getElementById('filter-gameweek');
@@ -1471,7 +1575,7 @@
             const container = document.getElementById('fixtures-container');
 
             if (filteredMatches.length > 0) {
-                document.getElementById('deadline-timer').innerText = filteredMatches[0].deadline.replace('T', ' ');
+                document.getElementById('deadline-timer').innerText = filteredMatches.map(m => m.deadline).sort()[0].replace('T', ' ');
             } else {
                 document.getElementById('deadline-timer').innerText = 'N/A';
             }
@@ -1658,21 +1762,47 @@
             renderPredictions();
         }
 
+        // ---- Leaderboard: single competition or all competitions combined ----
+        const LB_ALL = '__all__';
+        let lbExcluded = new Set();   // competitions the viewer has switched OFF in the combined total
+        try { lbExcluded = new Set(JSON.parse(localStorage.getItem('ftc_lb_excluded') || '[]')); } catch (e) {}
+
+        function compIsEnded(compId) {
+            const ms = db.matches.filter(m => m.compId === compId);
+            return ms.length > 0 && ms.every(m => m.status === 'FINISHED');
+        }
+
+        function matchResult(m) {
+            return m.scoreHome > m.scoreAway ? '1' : m.scoreHome < m.scoreAway ? '2' : 'X';
+        }
+
+        // Points system is unchanged: a correct pick earns the decimal odds of
+        // that outcome. gw = null scores the whole competition.
+        function scoreUser(username, compId, gw) {
+            const tips = db.predictions[username] || {};
+            let points = 0, correct = 0, predicted = 0;
+            db.matches.forEach(match => {
+                if (match.compId !== compId) return;
+                if (gw !== null && gw !== undefined && match.gameweek !== gw) return;
+                const pick = tips[match.id];
+                if (!pick) return;
+                predicted++;
+                if (match.status === 'FINISHED') {
+                    const r = matchResult(match);
+                    if (pick === r) { correct++; points += match.odds[r]; }
+                }
+            });
+            return { points, correct, predicted };
+        }
+
+        function toggleLbComp(compId) {
+            if (lbExcluded.has(compId)) lbExcluded.delete(compId); else lbExcluded.add(compId);
+            try { localStorage.setItem('ftc_lb_excluded', JSON.stringify([...lbExcluded])); } catch (e) {}
+            renderLeaderboard();
+        }
+
         function setLeaderboardMode(mode) {
             leaderboardMode = mode;
-            const weeklyBtn = document.getElementById('lb-mode-weekly');
-            const seasonBtn = document.getElementById('lb-mode-season');
-            const colHeader = document.getElementById('lb-table-points-col');
-
-            if (mode === 'weekly') {
-                weeklyBtn.className = "px-3 py-1.5 rounded-lg font-semibold bg-emerald-600 text-white transition";
-                seasonBtn.className = "px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition";
-                colHeader.innerText = "Selected Week Points";
-            } else {
-                seasonBtn.className = "px-3 py-1.5 rounded-lg font-semibold bg-emerald-600 text-white transition";
-                weeklyBtn.className = "px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition";
-                colHeader.innerText = "Total Cumulative Points";
-            }
             renderLeaderboard();
         }
 
@@ -1682,71 +1812,103 @@
 
             // Remember what was selected BEFORE rebuilding the option lists —
             // replacing a <select>'s innerHTML resets its selection to the
-            // first option, which was silently snapping the view back to
-            // whichever competition happened to be listed first (e.g. after
-            // picking "Europa", the very next render — triggered by this
-            // dropdown's own onchange — was wiping that choice straight back).
+            // first option.
             const prevCompId = compFilter.value;
             const prevGw = gwFilter.value;
 
-            compFilter.innerHTML = db.competitions.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-            if (prevCompId && db.competitions.some(c => c.id === prevCompId)) compFilter.value = prevCompId;
-            const selectedCompId = compFilter.value || (db.competitions[0]?.id || '');
+            const hasMulti = db.competitions.length > 1;
+            compFilter.innerHTML = (hasMulti ? [`<option value="${LB_ALL}">All competitions (combined)</option>`] : [])
+                .concat(db.competitions.map(c => `<option value="${c.id}">${lsEsc(c.name)}</option>`)).join('');
+            if (prevCompId && (prevCompId === LB_ALL ? hasMulti : db.competitions.some(c => c.id === prevCompId))) compFilter.value = prevCompId;
 
-            const compMatches = db.matches.filter(m => m.compId === selectedCompId);
-            const gws = [...new Set(compMatches.map(m => m.gameweek))].sort((a,b) => a - b);
+            const combined = hasMulti && compFilter.value === LB_ALL;
+            const selectedCompId = combined ? '' : (compFilter.value || (db.competitions[0]?.id || ''));
+
+            // Gameweek list only matters for a single competition.
+            const gws = gwsForComp(selectedCompId);
             if (gws.length === 0) gws.push(1);
-
+            const selComp = db.competitions.find(c => c.id === selectedCompId);
             gwFilter.innerHTML = gws.map(g => {
-                const comp = db.competitions.find(c => c.id === selectedCompId);
-                const gwLabel = (comp && comp.gwLabels && comp.gwLabels[g]) ? comp.gwLabels[g] : `Gameweek ${g}`;
+                const gwLabel = (selComp && selComp.gwLabels && selComp.gwLabels[g]) ? selComp.gwLabels[g] : `Gameweek ${g}`;
                 return `<option value="${g}">${gwLabel}</option>`;
             }).join('');
             if (prevGw && gws.includes(parseInt(prevGw))) gwFilter.value = prevGw;
             const selectedGW = parseInt(gwFilter.value || gws[0]);
+            gwFilter.classList.toggle('hidden', combined);
+
+            // A combined view is always cumulative — "week points" don't add up across competitions.
+            const mode = combined ? 'season' : leaderboardMode;
+            const on = "px-3 py-1.5 rounded-lg font-semibold bg-emerald-600 text-white transition";
+            const off = "px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition";
+            const weeklyBtn = document.getElementById('lb-mode-weekly');
+            const seasonBtn = document.getElementById('lb-mode-season');
+            weeklyBtn.className = mode === 'weekly' ? on : off;
+            seasonBtn.className = mode === 'season' ? on : off;
+            weeklyBtn.classList.toggle('hidden', combined);
+
+            // Which competitions are scored?
+            const compList = combined
+                ? db.competitions.filter(c => !lbExcluded.has(c.id))
+                : [selComp].filter(Boolean);
+
+            const picker = document.getElementById('lb-comp-picker');
+            picker.classList.toggle('hidden', !combined);
+            if (combined) {
+                document.getElementById('lb-comp-chips').innerHTML = db.competitions.map(c => {
+                    const included = !lbExcluded.has(c.id);
+                    return `<button onclick="toggleLbComp('${c.id}')" class="px-3 py-1.5 rounded-full text-[11px] font-semibold border transition flex items-center gap-1.5 ${included
+                        ? 'bg-emerald-600/20 border-emerald-500 text-emerald-300'
+                        : 'bg-slate-900 border-slate-600 text-slate-500 line-through'}">
+                        <i class="fa-solid ${included ? 'fa-square-check' : 'fa-square'}"></i>${lsEsc(c.name)}${compIsEnded(c.id) ? ' <span class="no-underline text-[9px] opacity-70">(ended)</span>' : ''}
+                    </button>`;
+                }).join('');
+            }
+
+            document.getElementById('lb-subtitle').textContent = combined
+                ? 'Points from every ticked competition added together. Each competition keeps its own scoring (correct pick = decimal odds).'
+                : "Click any user's name after deadline to view their predictions for the selected week.";
+
+            // Table header (extra column per competition in the combined view)
+            const th = 'py-3.5 px-4';
+            const pointsTitle = combined ? 'Combined Total Points' : (mode === 'weekly' ? 'Selected Week Points' : 'Total Cumulative Points');
+            document.getElementById('lb-thead-row').innerHTML = `
+                <th class="${th} text-center w-12">Rank</th>
+                <th class="${th}">Tipster Name</th>
+                <th class="${th} text-center">Correct Picks</th>
+                <th class="${th} text-center">Accuracy</th>
+                ${combined ? compList.map(c => `<th class="${th} text-right whitespace-nowrap">${lsEsc(c.name)}${compIsEnded(c.id) ? ' <span class="text-[9px] text-slate-500 normal-case">(ended)</span>' : ''}</th>`).join('') : ''}
+                <th class="${th} text-right pr-6" id="lb-table-points-col">${pointsTitle}</th>`;
 
             // Public leaderboard: administrators are intentionally excluded.
             const leaderboardUsers = allProfiles.filter(user => user.role !== 'admin' && user.approved);
 
             const userScores = leaderboardUsers.map(user => {
-                let points = 0;
-                let correctCount = 0;
-                let totalPredicted = 0;
-
-                const userTips = db.predictions[user.username] || {};
-
-                db.matches.filter(m => m.compId === selectedCompId).forEach(match => {
-                    if (leaderboardMode === 'weekly' && match.gameweek !== selectedGW) return;
-
-                    const pick = userTips[match.id];
-                    if (pick) {
-                        totalPredicted++;
-                        if (match.status === 'FINISHED') {
-                            const actualResult = match.scoreHome > match.scoreAway ? '1' : match.scoreHome < match.scoreAway ? '2' : 'X';
-                            if (pick === actualResult) {
-                                correctCount++;
-                                points += match.odds[actualResult];
-                            }
-                        }
-                    }
+                let points = 0, correctCount = 0, totalPredicted = 0;
+                const per = {};
+                compList.forEach(c => {
+                    const s = scoreUser(user.username, c.id, (!combined && mode === 'weekly') ? selectedGW : null);
+                    per[c.id] = s.points;
+                    points += s.points;
+                    correctCount += s.correct;
+                    totalPredicted += s.predicted;
                 });
-
                 const accuracy = totalPredicted > 0 ? ((correctCount / totalPredicted) * 100).toFixed(1) : '0.0';
-
                 return {
                     username: user.username,
                     displayName: user.displayName || user.username,
                     role: user.role,
-                    points,
-                    correctCount,
-                    totalPredicted,
-                    accuracy
+                    points, correctCount, totalPredicted, accuracy, per
                 };
             });
 
             userScores.sort((a, b) => b.points - a.points);
 
             const tbody = document.getElementById('leaderboard-tbody');
+            if (combined && compList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">Tick at least one competition above to see the combined total.</td></tr>`;
+                return;
+            }
+
             tbody.innerHTML = userScores.map((u, idx) => {
                 let rankBadge = `<span class="font-bold text-slate-400">${idx + 1}</span>`;
                 if (idx === 0) rankBadge = `<i class="fa-solid fa-crown text-amber-400 text-base" title="1st Place - Gold"></i>`;
@@ -1754,19 +1916,20 @@
                 if (idx === 2) rankBadge = `<i class="fa-solid fa-award text-amber-600 text-base" title="3rd Place - Bronze"></i>`;
 
                 const isCurrent = currentUser && currentUser.username === u.username;
+                const nameInner = `${u.displayName}
+                                <span class="text-[10px] text-slate-500 font-normal">(@${u.username})</span>
+                                ${u.role === 'admin' ? '<span class="text-[9px] bg-amber-500/20 text-amber-400 px-1 py-0.5 rounded border border-amber-500/30 font-mono">ADMIN</span>' : ''}`;
+                const nameCell = combined
+                    ? `<span class="flex items-center gap-1.5">${nameInner}</span>`
+                    : `<button onclick="inspectUserPredictions('${u.username}', '${selectedCompId}', ${selectedGW})" class="text-left hover:text-emerald-400 hover:underline transition flex items-center gap-1.5">${nameInner}</button>`;
 
                 return `
                     <tr class="hover:bg-slate-700/40 transition ${isCurrent ? 'bg-emerald-950/30 border-l-4 border-emerald-500' : ''}">
                         <td class="py-3.5 px-4 text-center font-bold">${rankBadge}</td>
-                        <td class="py-3.5 px-4 font-bold text-white">
-                            <button onclick="inspectUserPredictions('${u.username}', '${selectedCompId}', ${selectedGW})" class="text-left hover:text-emerald-400 hover:underline transition flex items-center gap-1.5">
-                                ${u.displayName}
-                                <span class="text-[10px] text-slate-500 font-normal">(@${u.username})</span>
-                                ${u.role === 'admin' ? '<span class="text-[9px] bg-amber-500/20 text-amber-400 px-1 py-0.5 rounded border border-amber-500/30 font-mono">ADMIN</span>' : ''}
-                            </button>
-                        </td>
+                        <td class="py-3.5 px-4 font-bold text-white">${nameCell}</td>
                         <td class="py-3.5 px-4 text-center font-mono">${u.correctCount} / ${u.totalPredicted}</td>
                         <td class="py-3.5 px-4 text-center font-mono text-slate-300">${u.accuracy}%</td>
+                        ${combined ? compList.map(c => `<td class="py-3.5 px-4 text-right font-mono text-slate-300">${u.per[c.id].toFixed(2)}</td>`).join('') : ''}
                         <td class="py-3.5 px-4 text-right pr-6 font-mono font-bold text-emerald-400 text-sm">
                             ${u.points.toFixed(2)} pts
                         </td>
@@ -2158,7 +2321,71 @@
             }
         }
 
+        // ---- Auto-accept new users (admin setting, stored in the shared game state) ----
+        // Supabase only lets an admin flip `approved`, so this runs in an
+        // admin's browser: whenever a sign-up request appears while an admin
+        // has the site open and the switch is on, it's approved straight away.
+        let autoApproving = false;
+
+        function isAutoAcceptOn() { return !!(db.settings && db.settings.autoAccept); }
+        // A brand-new request has never accepted the Terms; an account an admin
+        // revoked has, so revoked accounts are never re-approved by this.
+        function isPendingRequest(p) { return !p.approved && !p.acceptedTerms; }
+
+        function renderAutoAcceptToggle() {
+            const box = document.getElementById('admin-auto-accept');
+            if (box) box.checked = isAutoAcceptOn();
+            const st = document.getElementById('auto-accept-status');
+            if (st) {
+                st.textContent = isAutoAcceptOn() ? 'ON · new requests are approved automatically' : 'OFF · requests wait for your approval below';
+                st.className = 'text-[11px] font-semibold mt-2 ' + (isAutoAcceptOn() ? 'text-emerald-400' : 'text-slate-400');
+            }
+        }
+
+        async function approveProfiles(list, auto = false) {
+            const ids = list.map(p => p.id);
+            if (!ids.length) return;
+            const { error } = await supabaseClient.from('profiles').update({ approved: true }).in('id', ids);
+            if (error) { showToast("Couldn't approve some accounts.", "error"); return; }
+            await fetchProfiles();
+            updatePendingBadges();
+            renderPendingApprovals();
+            showToast(auto ? `Auto-approved ${ids.length} new user${ids.length > 1 ? 's' : ''}.` : `Approved ${ids.length} user${ids.length > 1 ? 's' : ''}.`);
+        }
+
+        async function autoApprovePending() {
+            if (autoApproving || !isAutoAcceptOn() || !currentUser || currentUser.role !== 'admin') return;
+            const since = db.settings.autoAcceptSince ? new Date(db.settings.autoAcceptSince).getTime() - 120000 : 0;
+            const list = allProfiles.filter(p => isPendingRequest(p) && (!p.createdAt || new Date(p.createdAt).getTime() >= since));
+            if (!list.length) return;
+            autoApproving = true;
+            try { await approveProfiles(list, true); } finally { autoApproving = false; }
+        }
+
+        async function toggleAutoAccept(on) {
+            if (!currentUser || currentUser.role !== 'admin') {
+                showToast("Only an admin can change this.", "warning");
+                renderAutoAcceptToggle();
+                return;
+            }
+            if (!db.settings) db.settings = {};
+            db.settings.autoAccept = on;
+            db.settings.autoAcceptSince = on ? new Date().toISOString() : null;
+            saveDB();
+            renderAutoAcceptToggle();
+
+            if (!on) { showToast("Auto-accept turned off."); return; }
+
+            showToast("Auto-accept is ON. New sign-ups are approved automatically.");
+            const waiting = allProfiles.filter(isPendingRequest);
+            if (waiting.length) {
+                const ok = await openConfirmModal("Approve waiting requests?", `${waiting.length} request${waiting.length > 1 ? 's are' : ' is'} already waiting. Approve ${waiting.length > 1 ? 'them' : 'it'} too?`);
+                if (ok) await approveProfiles(waiting);
+            }
+        }
+
         function renderPendingApprovals() {
+            renderAutoAcceptToggle();
             const listEl = document.getElementById('admin-approvals-list');
             const requests = allProfiles.filter(p => !p.approved);
 
@@ -2882,6 +3109,12 @@
             switchView('predict');
             subscribeToRemoteChanges();
             subscribeToProfileChanges();
+            autoApprovePending();
+            // keep the "next lock in ..." countdowns on the competition tabs fresh
+            setInterval(() => {
+                const v = document.getElementById('view-predict');
+                if (v && !v.classList.contains('hidden')) renderPredCompTabs();
+            }, 60000);
         };
     </script>
 </body>
