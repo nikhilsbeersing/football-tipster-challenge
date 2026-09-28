@@ -37,6 +37,8 @@
     </script>
     <style>
         body { font-family: 'Inter', sans-serif; }
+        /* Darkens the embedded scores frame (flips lightness, keeps hues) */
+        .sh-dark { filter: invert(0.92) hue-rotate(180deg); }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
@@ -323,77 +325,50 @@
             </div>
         </section>
 
-        <!-- VIEW: Live Scores, Highlights & News (Highlightly API) -->
-        <section id="view-livescores" class="hidden space-y-6">
-            <div class="bg-gradient-to-r from-emerald-900/60 via-slate-800 to-teal-900/60 border border-emerald-500/30 rounded-2xl p-5 shadow-xl space-y-4">
-                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div>
-                        <h2 class="text-lg sm:text-xl font-extrabold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-tower-broadcast text-emerald-400"></i> Football Live Scores
-                        </h2>
-                        <p class="text-[11px] text-slate-400 mt-1">
-                            Powered by <a href="https://highlightly.net" target="_blank" rel="noopener noreferrer" class="text-emerald-400 hover:underline">Highlightly</a>
-                            <span id="ls-updated" class="ml-2"></span>
-                            <span id="ls-quota" class="ml-2 text-slate-500"></span>
-                        </p>
+        <!-- VIEW: Live Scores (Sportradar StatsHub, embedded) -->
+        <section id="view-livescores" class="hidden space-y-4">
+            <div class="bg-gradient-to-r from-emerald-900/60 via-slate-800 to-teal-900/60 border border-emerald-500/30 rounded-2xl p-4 shadow-xl">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-lg shadow-emerald-900/30">
+                            <i class="fa-solid fa-trophy text-lg"></i>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-base sm:text-lg leading-tight text-white tracking-wide">Nikhil S. Beersing</h2>
+                            <p class="text-[11px] text-emerald-400 font-semibold tracking-wider uppercase flex items-center gap-1.5">
+                                Live Scores &amp; Stats
+                                <span class="inline-flex items-center px-1.5 py-0.2 text-[9px] rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1 animate-pulse"></span> Live
+                                </span>
+                            </p>
+                        </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
-                        <button onclick="lsShiftDate(-1)" class="bg-slate-700 hover:bg-slate-600 text-white text-xs px-2.5 py-2 rounded-lg" title="Previous day"><i class="fa-solid fa-chevron-left"></i></button>
-                        <input id="ls-date" type="date" onchange="lsSetDate(this.value)" class="bg-slate-900 border border-slate-600 text-slate-100 text-xs rounded-lg px-2.5 py-2 focus:outline-none focus:border-emerald-500">
-                        <button onclick="lsShiftDate(1)" class="bg-slate-700 hover:bg-slate-600 text-white text-xs px-2.5 py-2 rounded-lg" title="Next day"><i class="fa-solid fa-chevron-right"></i></button>
-                        <button onclick="lsSetDate(lsToday())" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold px-3 py-2 rounded-lg">Today</button>
-                        <button onclick="lsRefresh()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5"><i class="fa-solid fa-rotate"></i> Refresh</button>
-                        <label class="flex items-center gap-1.5 text-[11px] text-slate-400 cursor-pointer" title="Uses 1 API request per minute">
-                            <input id="ls-auto" type="checkbox" onchange="lsToggleAuto(this.checked)" class="accent-emerald-500"> Auto (60s)
-                        </label>
+                        <button id="sh-dark-btn" onclick="shToggleDark()" class="text-xs font-semibold px-3 py-2 rounded-lg border transition" title="Darkens the scores frame to match the site">
+                            <i class="fa-solid fa-moon mr-1.5"></i>Dark
+                        </button>
+                        <button onclick="shReload()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5">
+                            <i class="fa-solid fa-rotate"></i> Reload
+                        </button>
+                        <button onclick="shOpenNew()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Open full page
+                        </button>
                     </div>
                 </div>
-
-                <div class="flex items-center gap-1 border-t border-slate-700/60 pt-3">
-                    <button id="ls-tab-scores" onclick="lsTab('scores')" class="px-3 py-2 rounded-lg text-xs font-semibold"><i class="fa-solid fa-futbol mr-1.5"></i>Scores</button>
-                    <button id="ls-tab-highlights" onclick="lsTab('highlights')" class="px-3 py-2 rounded-lg text-xs font-semibold"><i class="fa-solid fa-circle-play mr-1.5"></i>Highlights</button>
-                    <button id="ls-tab-news" onclick="lsTab('news')" class="px-3 py-2 rounded-lg text-xs font-semibold"><i class="fa-solid fa-newspaper mr-1.5"></i>News</button>
-                </div>
             </div>
 
-            <div id="ls-error" class="hidden bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs rounded-xl p-3"></div>
-
-            <!-- Scores -->
-            <div id="ls-panel-scores" class="space-y-4">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div id="ls-filters" class="flex flex-wrap gap-1.5"></div>
-                    <input id="ls-search" type="search" oninput="lsSetQuery(this.value)" placeholder="Search team, league or country..." class="bg-slate-900 border border-slate-600 text-slate-100 text-xs rounded-lg px-3 py-2 w-full sm:w-72 focus:outline-none focus:border-emerald-500">
+            <div class="relative rounded-2xl overflow-hidden border border-emerald-500/30 shadow-2xl shadow-emerald-950/30 bg-slate-800">
+                <div id="sh-loading" class="absolute inset-0 flex items-center justify-center text-xs text-slate-400 pointer-events-none">
+                    <i class="fa-solid fa-spinner fa-spin mr-2"></i> Loading live scores...
                 </div>
-                <div id="ls-matches" class="space-y-4"></div>
-                <div id="ls-more-wrap" class="hidden text-center">
-                    <button onclick="lsLoadMore()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold px-4 py-2 rounded-lg">Load more matches</button>
-                </div>
+                <iframe id="sh-frame" title="Football live scores" onload="shLoaded()" allow="fullscreen" referrerpolicy="no-referrer-when-downgrade"
+                        class="relative w-full block" style="height: calc(100vh - 230px); min-height: 600px; border: 0;"></iframe>
             </div>
 
-            <!-- Highlights -->
-            <div id="ls-panel-highlights" class="hidden space-y-4">
-                <div id="ls-highlights" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-            </div>
-
-            <!-- News -->
-            <div id="ls-panel-news" class="hidden space-y-4">
-                <div class="bg-slate-800 border border-slate-700/80 rounded-xl p-3 text-[11px] text-slate-400 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <span>Highlightly attaches news articles to individual matches. This gathers the articles linked to up to 6 of the day's matches (uses up to 6 API requests).</span>
-                    <button onclick="lsLoadNews(true)" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-lg shrink-0"><i class="fa-solid fa-newspaper mr-1.5"></i>Load match news</button>
-                </div>
-                <div id="ls-news" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-            </div>
-
-            <!-- Match / video modal -->
-            <div id="ls-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm items-start sm:items-center justify-center p-3 overflow-y-auto" onclick="if(event.target===this) lsCloseModal()">
-                <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-2xl my-6 shadow-2xl">
-                    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-700">
-                        <span id="ls-modal-title" class="text-sm font-bold text-white truncate"></span>
-                        <button onclick="lsCloseModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-                    </div>
-                    <div id="ls-modal-body" class="p-4 text-sm"></div>
-                </div>
-            </div>
+            <p class="text-[10px] text-slate-500 text-center">
+                Live data by <a href="https://statshub.sportradar.com" target="_blank" rel="noopener noreferrer" class="text-emerald-400 hover:underline">Sportradar StatsHub</a>.
+                If the frame stays blank, use <span class="text-slate-300">Open full page</span>.
+            </p>
         </section>
 
         <!-- VIEW: Mobile App Guide -->
@@ -1520,10 +1495,10 @@
                         ? 'bg-emerald-600/15 border-emerald-500 shadow-lg shadow-emerald-900/20'
                         : 'bg-slate-800 border-slate-700 hover:border-slate-500'}">
                         <div class="flex items-center justify-between gap-2">
-                            <span class="text-xs font-bold ${isActive ? 'text-emerald-300' : 'text-white'} truncate max-w-[130px]">${lsEsc(c.name)}</span>
+                            <span class="text-xs font-bold ${isActive ? 'text-emerald-300' : 'text-white'} truncate max-w-[130px]">${escHtml(c.name)}</span>
                             ${badge}
                         </div>
-                        <div class="text-[10px] text-slate-400 mt-0.5">${lsEsc(c.season || '')} · ${line}</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">${escHtml(c.season || '')} · ${line}</div>
                     </button>`;
             }).join('');
         }
@@ -1818,7 +1793,7 @@
 
             const hasMulti = db.competitions.length > 1;
             compFilter.innerHTML = (hasMulti ? [`<option value="${LB_ALL}">All competitions (combined)</option>`] : [])
-                .concat(db.competitions.map(c => `<option value="${c.id}">${lsEsc(c.name)}</option>`)).join('');
+                .concat(db.competitions.map(c => `<option value="${c.id}">${escHtml(c.name)}</option>`)).join('');
             if (prevCompId && (prevCompId === LB_ALL ? hasMulti : db.competitions.some(c => c.id === prevCompId))) compFilter.value = prevCompId;
 
             const combined = hasMulti && compFilter.value === LB_ALL;
@@ -1859,7 +1834,7 @@
                     return `<button onclick="toggleLbComp('${c.id}')" class="px-3 py-1.5 rounded-full text-[11px] font-semibold border transition flex items-center gap-1.5 ${included
                         ? 'bg-emerald-600/20 border-emerald-500 text-emerald-300'
                         : 'bg-slate-900 border-slate-600 text-slate-500 line-through'}">
-                        <i class="fa-solid ${included ? 'fa-square-check' : 'fa-square'}"></i>${lsEsc(c.name)}${compIsEnded(c.id) ? ' <span class="no-underline text-[9px] opacity-70">(ended)</span>' : ''}
+                        <i class="fa-solid ${included ? 'fa-square-check' : 'fa-square'}"></i>${escHtml(c.name)}${compIsEnded(c.id) ? ' <span class="no-underline text-[9px] opacity-70">(ended)</span>' : ''}
                     </button>`;
                 }).join('');
             }
@@ -1876,7 +1851,7 @@
                 <th class="${th}">Tipster Name</th>
                 <th class="${th} text-center">Correct Picks</th>
                 <th class="${th} text-center">Accuracy</th>
-                ${combined ? compList.map(c => `<th class="${th} text-right whitespace-nowrap">${lsEsc(c.name)}${compIsEnded(c.id) ? ' <span class="text-[9px] text-slate-500 normal-case">(ended)</span>' : ''}</th>`).join('') : ''}
+                ${combined ? compList.map(c => `<th class="${th} text-right whitespace-nowrap">${escHtml(c.name)}${compIsEnded(c.id) ? ' <span class="text-[9px] text-slate-500 normal-case">(ended)</span>' : ''}</th>`).join('') : ''}
                 <th class="${th} text-right pr-6" id="lb-table-points-col">${pointsTitle}</th>`;
 
             // Public leaderboard: administrators are intentionally excluded.
@@ -2641,6 +2616,11 @@
                         ${!u.approved ? `<span class="text-[9px] bg-rose-500/20 text-rose-400 border border-rose-500/30 px-1.5 py-0.2 rounded font-mono ml-1 uppercase">Revoked</span>` : ''}
                     </div>
                     <div class="flex items-center gap-2">
+                        ${currentUser && u.id !== currentUser.id && u.role !== 'admin' ? `
+                            <button onclick="confirmDeleteTipster('${u.id}')" class="text-[10px] font-semibold text-rose-500 hover:text-rose-400 ml-1" title="Delete this tipster permanently">
+                                <i class="fa-solid fa-trash"></i> Delete
+                            </button>
+                        ` : ''}
                         ${currentUser && u.id !== currentUser.id ? `
                             <button onclick="confirmToggleUserAccess('${u.id}', ${u.approved})" class="text-[10px] font-semibold ${u.approved ? 'text-rose-400 hover:text-rose-300' : 'text-emerald-400 hover:text-emerald-300'} ml-1">
                                 ${u.approved ? '<i class="fa-solid fa-ban"></i> Revoke' : '<i class="fa-solid fa-rotate-left"></i> Restore'}
@@ -2649,6 +2629,67 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        // Permanently deletes a tipster: their account, their login and all of their picks.
+        //
+        // A browser can't delete a Supabase login on its own (that needs the private
+        // service-role key), so this calls a small admin-only database function,
+        // admin_delete_user, which you add ONCE in Supabase -> SQL Editor:
+        //
+        //   create or replace function public.admin_delete_user(target uuid)
+        //   returns void language plpgsql security definer set search_path = public, auth as $$
+        //   begin
+        //     if not exists (select 1 from public.profiles where id = auth.uid() and role = 'admin') then
+        //       raise exception 'not allowed';
+        //     end if;
+        //     if target = auth.uid() then raise exception 'cannot delete yourself'; end if;
+        //     delete from public.profiles where id = target;
+        //     delete from auth.users where id = target;
+        //   end; $$;
+        //   revoke all on function public.admin_delete_user(uuid) from public, anon;
+        //   grant execute on function public.admin_delete_user(uuid) to authenticated;
+        //
+        // Until that exists, this falls back to removing the profile and picks only.
+        async function confirmDeleteTipster(userId) {
+            if (!currentUser || currentUser.role !== 'admin') return;
+            const user = allProfiles.find(u => u.id === userId);
+            if (!user || user.role === 'admin' || user.id === currentUser.id) return;
+
+            const picks = Object.keys(db.predictions[user.username] || {}).length;
+            const ok = await openConfirmModal(
+                "Delete Tipster Permanently",
+                `Permanently delete @${user.username}? Their account and their ${picks} saved pick${picks === 1 ? '' : 's'} will be removed, and their points disappear from every leaderboard. This cannot be undone.`
+            );
+            if (!ok) return;
+
+            let loginRemoved = true;
+            const { error: rpcError } = await supabaseClient.rpc('admin_delete_user', { target: userId });
+
+            if (rpcError) {
+                const fnMissing = rpcError.code === 'PGRST202' || /could not find|does not exist/i.test(rpcError.message || '');
+                if (!fnMissing) { showToast("Couldn't delete that tipster: " + (rpcError.message || 'not allowed'), "error"); return; }
+
+                const { error } = await supabaseClient.from('profiles').delete().eq('id', userId);
+                if (error) { showToast("Couldn't delete that tipster.", "error"); return; }
+                loginRemoved = false;
+            }
+
+            if (db.predictions[user.username]) {
+                delete db.predictions[user.username];
+                saveDB();
+            }
+
+            await fetchProfiles();
+            updatePendingBadges();
+            renderAdminUsers();
+            renderPendingApprovals();
+            if (!document.getElementById('view-leaderboard').classList.contains('hidden')) renderLeaderboard();
+
+            showToast(loginRemoved
+                ? `@${user.username} was deleted permanently.`
+                : `@${user.username} removed. Their login still exists, so the username can't be reused until you add the delete function (see the code comment) or remove it under Supabase > Authentication.`,
+                loginRemoved ? 'success' : 'warning');
         }
 
         // Real login credentials live in Supabase Auth, which can only be
@@ -2676,429 +2717,66 @@
         }
 
         // =====================================================================
-        // LIVE SCORES, HIGHLIGHTS & NEWS  (Highlightly Football API)
+        // LIVE SCORES — Sportradar StatsHub, embedded in an iframe
         // =====================================================================
-        // NOTE: this key is visible to anyone who views your page source.
-        // Keep the free-tier key here only, and rotate it in your Highlightly
-        // dashboard if it is ever abused.
-        const LS_API_KEY  = '93c847e8-4d7f-4828-8ff8-d8ccc2c85def';
-        const LS_BASE     = 'https://sports.highlightly.net';
-        const LS_CACHE_MS = 2 * 60 * 1000;   // reuse results for 2 min to save your daily quota
-        const LS_PAGE     = 100;
+        // The scores come from Sportradar's hosted StatsHub. Its own colours,
+        // header and logo are set by Sportradar per client "alias". When you
+        // get your own alias, put it in SH_ALIAS and the page uses it.
+        const SH_ALIAS    = 'sportradar';
+        const SH_LANG     = 'en';
+        const SH_SPORT    = 1;                       // 1 = Soccer
+        const SH_DARK_KEY = 'ftc_statshub_dark';
 
-        const lsState = {
-            inited: false, date: null, tab: 'scores', filter: 'all', query: '',
-            matches: [], total: 0, offset: 0, highlights: [],
-            loaded: {}, cache: {}, timer: null
-        };
-
-        function lsToday() { return new Date().toLocaleDateString('en-CA'); }
-        function lsEl(id) { return document.getElementById(id); }
-        function lsEsc(s) {
+        function escHtml(s) {
             return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         }
-        function lsUrl(u) { return /^https?:\/\//i.test(u || '') ? u : '#'; }
-        function lsTime(d) {
-            const t = new Date(d);
-            return isNaN(t) ? '--:--' : t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        function shUrl() { return `https://statshub.sportradar.com/${SH_ALIAS}/${SH_LANG}/sport/${SH_SPORT}`; }
+
+        function shDarkPref() {
+            try { const v = localStorage.getItem(SH_DARK_KEY); return v === null ? true : v === '1'; }
+            catch (e) { return true; }
         }
 
-        async function lsFetch(path, params = {}, force = false) {
-            const url = new URL(LS_BASE + path);
-            Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, v); });
-            const key = url.toString();
-            const hit = lsState.cache[key];
-            if (!force && hit && Date.now() - hit.t < LS_CACHE_MS) return hit.json;
-
-            let res;
-            try {
-                res = await fetch(key, { headers: { 'x-rapidapi-key': LS_API_KEY } });
-            } catch (e) {
-                throw new Error("Couldn't reach Highlightly (network or CORS issue). Check your connection and the browser console.");
-            }
-            const remaining = res.headers.get('x-ratelimit-requests-remaining');
-            if (remaining !== null) lsEl('ls-quota').textContent = `· ${remaining} requests left today`;
-            if (res.status === 401 || res.status === 403) throw new Error('Highlightly rejected the API key. Check LS_API_KEY in index.html.');
-            if (res.status === 429) throw new Error('Daily request limit reached. It resets tomorrow, or upgrade your Highlightly plan.');
-            if (!res.ok) throw new Error(`Highlightly returned an error (${res.status}).`);
-            const json = await res.json();
-            lsState.cache[key] = { t: Date.now(), json };
-            return json;
+        function shApplyDark() {
+            const on = shDarkPref();
+            const frame = document.getElementById('sh-frame');
+            if (frame) frame.classList.toggle('sh-dark', on);
+            const btn = document.getElementById('sh-dark-btn');
+            if (btn) btn.className = 'text-xs font-semibold px-3 py-2 rounded-lg border transition ' +
+                (on ? 'bg-emerald-600/20 border-emerald-500 text-emerald-300' : 'bg-slate-700 border-slate-600 text-slate-300 hover:text-white');
         }
 
-        function lsShowError(msg) {
-            const box = lsEl('ls-error');
-            if (!msg) { box.classList.add('hidden'); box.textContent = ''; return; }
-            box.textContent = msg;
-            box.classList.remove('hidden');
+        function shToggleDark() {
+            try { localStorage.setItem(SH_DARK_KEY, shDarkPref() ? '0' : '1'); } catch (e) {}
+            shApplyDark();
         }
 
-        function lsSpinner(text = 'Loading...') {
-            return `<div class="col-span-full text-center text-slate-400 text-xs py-10"><i class="fa-solid fa-spinner fa-spin mr-2"></i>${lsEsc(text)}</div>`;
-        }
-        function lsEmpty(text) {
-            return `<div class="col-span-full text-center text-slate-500 text-xs py-10 bg-slate-800/60 border border-slate-700/60 rounded-xl">${lsEsc(text)}</div>`;
-        }
-
-        // ---- status helpers -------------------------------------------------
-        function lsStatus(m) {
-            const d = String(m?.state?.description || '').trim();
-            const l = d.toLowerCase();
-            if (!l || /not started|scheduled|to be (defined|announced)|tba|upcoming/.test(l)) return { kind: 'upcoming', label: d || 'Scheduled' };
-            if (/finish|full.?time|ended|after (extra|pen)|awarded|walk ?over/.test(l)) return { kind: 'finished', label: d };
-            if (/postpon|cancel|abandon|suspend|interrupt|delay/.test(l)) return { kind: 'other', label: d };
-            const clock = m?.state?.clock;
-            return { kind: 'live', label: clock != null && clock !== '' ? `${d} ${clock}'` : d };
-        }
-        function lsScore(m) {
-            const c = m?.state?.score?.current;
-            if (c == null || c === '') return null;
-            if (typeof c === 'string') return c.replace(/\s*-\s*/, ' - ');
-            if (typeof c === 'object') return `${c.home ?? 0} - ${c.away ?? 0}`;
-            return String(c);
-        }
-        function lsLogo(o) {
-            return o?.logo ? `<img src="${lsEsc(lsUrl(o.logo))}" alt="" loading="lazy" class="w-5 h-5 object-contain shrink-0" onerror="this.style.display='none'">` : '<span class="w-5 h-5 shrink-0"></span>';
+        function shLoad(force) {
+            const frame = document.getElementById('sh-frame');
+            if (!frame) return;
+            if (!force && frame.getAttribute('src')) return;      // already loaded — keep the current state
+            const loading = document.getElementById('sh-loading');
+            if (loading) loading.classList.remove('hidden');
+            if (force) { frame.src = 'about:blank'; setTimeout(() => { frame.src = shUrl(); }, 50); }
+            else frame.src = shUrl();
         }
 
-        // ---- date & controls ------------------------------------------------
-        function lsSetDate(d) {
-            if (!d) return;
-            lsState.date = d;
-            lsEl('ls-date').value = d;
-            lsState.loaded = {};
-            lsEl('ls-news').innerHTML = '';
-            lsLoadActiveTab(true);
-        }
-        function lsShiftDate(days) {
-            const dt = new Date(lsState.date + 'T12:00:00');
-            dt.setDate(dt.getDate() + days);
-            lsSetDate(dt.toLocaleDateString('en-CA'));
-        }
-        function lsRefresh() { lsLoadActiveTab(true, true); }
-        function lsSetQuery(q) { lsState.query = q.trim().toLowerCase(); lsRenderMatches(); }
-        function lsSetFilter(f) { lsState.filter = f; lsRenderMatches(); }
-
-        function lsToggleAuto(on) {
-            clearInterval(lsState.timer);
-            lsState.timer = null;
-            if (!on) return;
-            lsState.timer = setInterval(() => {
-                const visible = !lsEl('view-livescores').classList.contains('hidden');
-                if (visible && lsState.tab === 'scores' && !document.hidden) lsLoadScores(true, true);
-            }, 60000);
+        function shLoaded() {
+            const frame = document.getElementById('sh-frame');
+            if (frame && frame.getAttribute('src') === 'about:blank') return;
+            const loading = document.getElementById('sh-loading');
+            if (loading) loading.classList.add('hidden');
         }
 
-        function lsTab(name) {
-            lsState.tab = name;
-            ['scores', 'highlights', 'news'].forEach(t => {
-                lsEl(`ls-panel-${t}`).classList.toggle('hidden', t !== name);
-                lsEl(`ls-tab-${t}`).className = t === name
-                    ? 'px-3 py-2 rounded-lg text-xs font-semibold text-emerald-400 bg-slate-700/70'
-                    : 'px-3 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-700/50';
-            });
-            lsLoadActiveTab(false);
-        }
+        function shReload() { shLoad(true); }
+        function shOpenNew() { window.open(shUrl(), '_blank', 'noopener'); }
 
-        function lsLoadActiveTab(reset, force = false) {
-            lsShowError('');
-            if (lsState.tab === 'scores') return lsLoadScores(reset && !lsState.loaded.scores ? false : force, false);
-            if (lsState.tab === 'highlights') return lsLoadHighlights(force);
-            if (lsState.tab === 'news' && force) return lsLoadNews(true);
-        }
-
-        // ---- scores ---------------------------------------------------------
-        async function lsLoadScores(force = false, silent = false) {
-            if (!force && lsState.loaded.scores) { lsRenderMatches(); return; }
-            if (!silent) lsEl('ls-matches').innerHTML = lsSpinner('Loading matches...');
-            try {
-                const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Etc/UTC';
-                const res = await lsFetch('/football/matches', { date: lsState.date, limit: LS_PAGE, offset: 0, timezone: tz }, force);
-                lsState.matches = Array.isArray(res) ? res : (res.data || []);
-                lsState.total = res?.pagination?.totalCount ?? lsState.matches.length;
-                lsState.offset = lsState.matches.length;
-                lsState.loaded.scores = true;
-                lsEl('ls-updated').textContent = `· Updated ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-                lsShowError('');
-                lsRenderMatches();
-            } catch (e) {
-                lsShowError(e.message);
-                if (!lsState.matches.length) lsEl('ls-matches').innerHTML = lsEmpty('Could not load matches.');
-            }
-        }
-
-        async function lsLoadMore() {
-            try {
-                const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Etc/UTC';
-                const res = await lsFetch('/football/matches', { date: lsState.date, limit: LS_PAGE, offset: lsState.offset, timezone: tz });
-                const more = Array.isArray(res) ? res : (res.data || []);
-                lsState.matches = lsState.matches.concat(more);
-                lsState.offset += more.length;
-                lsRenderMatches();
-            } catch (e) { lsShowError(e.message); }
-        }
-
-        function lsRenderMatches() {
-            const all = lsState.matches;
-            const counts = { all: all.length, live: 0, upcoming: 0, finished: 0 };
-            all.forEach(m => { const k = lsStatus(m).kind; if (counts[k] !== undefined) counts[k]++; });
-
-            const chips = [['all', 'All'], ['live', 'Live'], ['upcoming', 'Upcoming'], ['finished', 'Finished']];
-            lsEl('ls-filters').innerHTML = chips.map(([k, label]) => `
-                <button onclick="lsSetFilter('${k}')" class="px-3 py-1.5 rounded-full text-[11px] font-semibold border transition ${lsState.filter === k
-                    ? 'bg-emerald-600 border-emerald-500 text-white'
-                    : 'bg-slate-800 border-slate-600 text-slate-300 hover:text-white'}">
-                    ${k === 'live' ? '<span class="inline-block w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse mr-1"></span>' : ''}${label} <span class="opacity-70">${counts[k]}</span>
-                </button>`).join('');
-
-            const q = lsState.query;
-            const list = all.filter(m => {
-                if (lsState.filter !== 'all' && lsStatus(m).kind !== lsState.filter) return false;
-                if (!q) return true;
-                return [m.homeTeam?.name, m.awayTeam?.name, m.league?.name, m.country?.name].some(v => String(v || '').toLowerCase().includes(q));
-            });
-
-            const box = lsEl('ls-matches');
-            if (!list.length) {
-                box.innerHTML = lsEmpty(all.length ? 'No matches match your filter.' : 'No matches found for this date.');
-            } else {
-                const groups = {};
-                list.forEach(m => {
-                    const key = `${m.country?.name || ''}|${m.league?.name || 'Other'}`;
-                    (groups[key] = groups[key] || { league: m.league, country: m.country, items: [] }).items.push(m);
-                });
-                const ordered = Object.values(groups).sort((a, b) => {
-                    const la = a.items.some(m => lsStatus(m).kind === 'live') ? 0 : 1;
-                    const lb = b.items.some(m => lsStatus(m).kind === 'live') ? 0 : 1;
-                    return la - lb || String(a.league?.name).localeCompare(String(b.league?.name));
-                });
-                box.innerHTML = ordered.map(g => `
-                    <div class="bg-slate-800 border border-slate-700/80 rounded-2xl overflow-hidden">
-                        <div class="flex items-center gap-2 px-4 py-2.5 bg-slate-900/60 border-b border-slate-700/60">
-                            ${lsLogo(g.league)}
-                            <span class="text-xs font-bold text-white">${lsEsc(g.league?.name || 'Other')}</span>
-                            <span class="text-[10px] text-slate-500">${lsEsc(g.country?.name || '')}</span>
-                        </div>
-                        <div class="divide-y divide-slate-700/50">
-                            ${g.items.sort((a, b) => new Date(a.date) - new Date(b.date)).map(lsMatchRow).join('')}
-                        </div>
-                    </div>`).join('');
-            }
-            lsEl('ls-more-wrap').classList.toggle('hidden', lsState.offset >= lsState.total);
-        }
-
-        function lsMatchRow(m) {
-            const st = lsStatus(m), sc = lsScore(m);
-            const center = (st.kind === 'upcoming' || !sc)
-                ? `<span class="text-xs font-semibold text-slate-300">${lsEsc(lsTime(m.date))}</span>`
-                : `<span class="text-sm font-extrabold text-white tabular-nums">${lsEsc(sc)}</span>`;
-            const pill = st.kind === 'live'
-                ? `<span class="text-[10px] font-bold text-rose-300 bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 rounded-full flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse"></span>${lsEsc(st.label)}</span>`
-                : `<span class="text-[10px] text-slate-400">${lsEsc(st.kind === 'upcoming' ? '' : st.label)}</span>`;
-            return `
-                <button onclick="lsOpenMatch('${lsEsc(m.id)}')" class="w-full text-left px-4 py-3 hover:bg-slate-700/40 transition flex items-center gap-3">
-                    <div class="flex-1 min-w-0 flex items-center justify-end gap-2">
-                        <span class="text-xs sm:text-sm font-medium text-slate-100 truncate text-right">${lsEsc(m.homeTeam?.name)}</span>${lsLogo(m.homeTeam)}
-                    </div>
-                    <div class="w-16 text-center shrink-0">${center}</div>
-                    <div class="flex-1 min-w-0 flex items-center gap-2">
-                        ${lsLogo(m.awayTeam)}<span class="text-xs sm:text-sm font-medium text-slate-100 truncate">${lsEsc(m.awayTeam?.name)}</span>
-                    </div>
-                    <div class="w-20 flex justify-end shrink-0">${pill}</div>
-                </button>`;
-        }
-
-        // ---- match detail modal --------------------------------------------
-        function lsOpenModal(title, html) {
-            lsEl('ls-modal-title').textContent = title;
-            lsEl('ls-modal-body').innerHTML = html;
-            const m = lsEl('ls-modal');
-            m.classList.remove('hidden'); m.classList.add('flex');
-        }
-        function lsCloseModal() {
-            const m = lsEl('ls-modal');
-            m.classList.add('hidden'); m.classList.remove('flex');
-            lsEl('ls-modal-body').innerHTML = '';   // also stops any playing video
-        }
-        document.addEventListener('keydown', e => { if (e.key === 'Escape') lsCloseModal(); });
-
-        async function lsOpenMatch(id) {
-            const base = lsState.matches.find(x => String(x.id) === String(id));
-            lsOpenModal(base ? `${base.homeTeam?.name} vs ${base.awayTeam?.name}` : 'Match', lsSpinner('Loading match details...'));
-            try {
-                const res = await lsFetch(`/football/matches/${id}`);
-                const m = Array.isArray(res) ? res[0] : res;
-                if (!m) throw new Error('No details available for this match.');
-                lsEl('ls-modal-body').innerHTML = lsMatchDetail(m);
-            } catch (e) {
-                lsEl('ls-modal-body').innerHTML = `<p class="text-rose-300 text-xs">${lsEsc(e.message)}</p>`;
-            }
-        }
-
-        function lsMatchDetail(m) {
-            const st = lsStatus(m), sc = lsScore(m);
-            const info = [
-                m.venue?.name ? `<i class="fa-solid fa-location-dot mr-1"></i>${lsEsc(m.venue.name)}${m.venue.city ? ', ' + lsEsc(m.venue.city) : ''}` : '',
-                m.referee?.name ? `<i class="fa-solid fa-flag mr-1"></i>${lsEsc(m.referee.name)}` : '',
-                m.forecast?.temperature ? `<i class="fa-solid fa-cloud-sun mr-1"></i>${lsEsc(m.forecast.temperature)} ${lsEsc(m.forecast.status || '')}` : ''
-            ].filter(Boolean);
-
-            const evIcon = t => {
-                t = String(t || '').toLowerCase();
-                if (t.includes('goal')) return '<i class="fa-solid fa-futbol text-emerald-400"></i>';
-                if (t.includes('yellow')) return '<i class="fa-solid fa-square text-amber-400"></i>';
-                if (t.includes('red')) return '<i class="fa-solid fa-square text-rose-500"></i>';
-                if (t.includes('sub')) return '<i class="fa-solid fa-right-left text-sky-400"></i>';
-                return '<i class="fa-solid fa-circle-info text-slate-400"></i>';
-            };
-            const events = (m.events || []).map(e => `
-                <div class="flex items-center gap-3 py-1.5 text-xs">
-                    <span class="w-10 text-slate-400 tabular-nums">${lsEsc(e.time)}'</span>
-                    <span class="w-5 text-center">${evIcon(e.type)}</span>
-                    <span class="text-slate-100">${lsEsc(e.player || e.type)}${e.assist ? ` <span class="text-slate-500">(${lsEsc(e.assist)})</span>` : ''}</span>
-                    <span class="ml-auto text-[10px] text-slate-500">${lsEsc(e.team?.name || '')}</span>
-                </div>`).join('');
-
-            const pr = m.predictions?.prematch?.[0]?.probabilities;
-            const bar = (label, v) => {
-                const n = Math.max(0, Math.min(100, parseFloat(String(v).replace('%', '')) || 0));
-                return `<div class="text-xs"><div class="flex justify-between text-slate-300 mb-1"><span>${label}</span><span>${lsEsc(v)}</span></div>
-                        <div class="h-1.5 bg-slate-700 rounded-full overflow-hidden"><div class="h-full bg-emerald-500" style="width:${n}%"></div></div></div>`;
-            };
-            const preds = pr ? `
-                <div class="mt-4"><h4 class="text-[11px] uppercase tracking-wider text-slate-400 font-bold mb-2">Pre-match prediction</h4>
-                <div class="grid grid-cols-3 gap-3">${bar(lsEsc(m.homeTeam?.name || 'Home'), pr.home)}${bar('Draw', pr.draw)}${bar(lsEsc(m.awayTeam?.name || 'Away'), pr.away)}</div></div>` : '';
-
-            const news = (m.news || []).slice(0, 5).map(lsNewsCard).join('');
-
-            return `
-                <div class="flex items-center justify-center gap-4 py-2">
-                    <div class="flex-1 flex flex-col items-center gap-1 text-center">${lsLogo(m.homeTeam).replace('w-5 h-5', 'w-10 h-10')}<span class="text-xs font-semibold text-white">${lsEsc(m.homeTeam?.name)}</span></div>
-                    <div class="text-center">
-                        <div class="text-2xl font-extrabold text-white tabular-nums">${lsEsc(sc || lsTime(m.date))}</div>
-                        <div class="text-[10px] ${st.kind === 'live' ? 'text-rose-300' : 'text-slate-400'}">${lsEsc(st.label)}</div>
-                    </div>
-                    <div class="flex-1 flex flex-col items-center gap-1 text-center">${lsLogo(m.awayTeam).replace('w-5 h-5', 'w-10 h-10')}<span class="text-xs font-semibold text-white">${lsEsc(m.awayTeam?.name)}</span></div>
-                </div>
-                <p class="text-center text-[11px] text-slate-500">${lsEsc(m.league?.name || '')}${m.round ? ' · ' + lsEsc(m.round) : ''}</p>
-                ${info.length ? `<p class="text-center text-[11px] text-slate-400 mt-1">${info.join(' &nbsp; ')}</p>` : ''}
-                ${events ? `<div class="mt-4"><h4 class="text-[11px] uppercase tracking-wider text-slate-400 font-bold mb-1">Match events</h4><div class="divide-y divide-slate-700/50">${events}</div></div>` : ''}
-                ${preds}
-                ${news ? `<div class="mt-4"><h4 class="text-[11px] uppercase tracking-wider text-slate-400 font-bold mb-2">Related news</h4><div class="space-y-2">${news}</div></div>` : ''}
-                ${!events && !preds && !news ? '<p class="text-center text-xs text-slate-500 mt-4">No extra details available for this match yet.</p>' : ''}`;
-        }
-
-        // ---- news -----------------------------------------------------------
-        function lsNewsCard(n) {
-            const url = lsUrl(n.url || n.link);
-            const img = n.image || n.imageUrl || n.imgUrl;
-            const when = n.publishedAt || n.publishDate || n.date;
-            const whenTxt = when && !isNaN(new Date(when)) ? new Date(when).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '';
-            return `
-                <a href="${lsEsc(url)}" target="_blank" rel="noopener noreferrer" class="flex gap-3 bg-slate-900/60 hover:bg-slate-900 border border-slate-700/60 rounded-xl p-2.5 transition">
-                    ${img ? `<img src="${lsEsc(lsUrl(img))}" alt="" loading="lazy" class="w-20 h-16 object-cover rounded-lg shrink-0" onerror="this.style.display='none'">` : ''}
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold text-white leading-snug">${lsEsc(n.title || 'Article')}</p>
-                        <p class="text-[10px] text-slate-500 mt-1">${lsEsc(n.matchLabel || '')}${n.matchLabel && whenTxt ? ' · ' : ''}${lsEsc(whenTxt)}</p>
-                    </div>
-                </a>`;
-        }
-
-        async function lsLoadNews(force = false) {
-            const box = lsEl('ls-news');
-            box.innerHTML = lsSpinner('Gathering match news...');
-            lsShowError('');
-            try {
-                if (!lsState.matches.length) await lsLoadScores(false, true);
-                const rank = { live: 0, finished: 1, upcoming: 2, other: 3 };
-                const pool = [...lsState.matches].sort((a, b) => rank[lsStatus(a).kind] - rank[lsStatus(b).kind]).slice(0, 6);
-                if (!pool.length) { box.innerHTML = lsEmpty('No matches on this date, so there is no news to load.'); return; }
-                const results = await Promise.allSettled(pool.map(m => lsFetch(`/football/matches/${m.id}`, {}, force)));
-                const seen = new Set(), items = [];
-                results.forEach((r, i) => {
-                    if (r.status !== 'fulfilled') return;
-                    const d = Array.isArray(r.value) ? r.value[0] : r.value;
-                    (d?.news || []).forEach(n => {
-                        const u = n.url || n.link || n.title;
-                        if (seen.has(u)) return;
-                        seen.add(u);
-                        items.push({ ...n, matchLabel: `${pool[i].homeTeam?.name} vs ${pool[i].awayTeam?.name}` });
-                    });
-                });
-                const failed = results.find(r => r.status === 'rejected');
-                if (failed && !items.length) throw failed.reason;
-                box.innerHTML = items.length
-                    ? items.map(lsNewsCard).join('')
-                    : lsEmpty('No news articles are linked to this date\'s top matches. Try a bigger match day.');
-            } catch (e) {
-                lsShowError(e.message);
-                box.innerHTML = lsEmpty('Could not load news.');
-            }
-        }
-
-        // ---- highlights -----------------------------------------------------
-        async function lsLoadHighlights(force = false) {
-            const box = lsEl('ls-highlights');
-            if (!force && lsState.loaded.highlights) return;
-            box.innerHTML = lsSpinner('Loading highlights...');
-            try {
-                const res = await lsFetch('/football/highlights', { date: lsState.date, limit: 40 }, force);
-                lsState.highlights = Array.isArray(res) ? res : (res.data || []);
-                lsState.loaded.highlights = true;
-                lsShowError('');
-                box.innerHTML = lsState.highlights.length
-                    ? lsState.highlights.map((h, i) => lsHighlightCard(h, i)).join('')
-                    : lsEmpty('No highlights for this date yet. Verified clips usually appear within 48 hours after a match.');
-            } catch (e) {
-                lsShowError(e.message);
-                box.innerHTML = lsEmpty('Could not load highlights.');
-            }
-        }
-
-        function lsHighlightCard(h, i) {
-            const img = h.imgUrl || h.thumbnail || h.image;
-            const verified = String(h.type || '').toUpperCase() === 'VERIFIED';
-            const mt = h.match;
-            const label = mt ? `${mt.homeTeam?.name || ''} vs ${mt.awayTeam?.name || ''}` : '';
-            return `
-                <button onclick="lsPlayHighlight(${i})" class="text-left bg-slate-800 hover:bg-slate-700/60 border border-slate-700/80 rounded-2xl overflow-hidden transition group">
-                    <div class="relative h-36 bg-slate-900 flex items-center justify-center">
-                        ${img ? `<img src="${lsEsc(lsUrl(img))}" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover opacity-80" onerror="this.style.display='none'">` : ''}
-                        <i class="fa-solid fa-circle-play text-4xl text-white/90 relative group-hover:scale-110 transition"></i>
-                        ${verified ? '<span class="absolute top-2 left-2 text-[9px] font-bold bg-emerald-500/90 text-white px-1.5 py-0.5 rounded">VERIFIED</span>' : ''}
-                    </div>
-                    <div class="p-3">
-                        <p class="text-xs font-semibold text-white leading-snug line-clamp-2">${lsEsc(h.title || 'Highlight')}</p>
-                        <p class="text-[10px] text-slate-400 mt-1.5 truncate">${lsEsc(label)}</p>
-                        <p class="text-[10px] text-slate-500 capitalize">${lsEsc(h.source || '')}${h.channel ? ' · ' + lsEsc(h.channel) : ''}</p>
-                    </div>
-                </button>`;
-        }
-
-        function lsPlayHighlight(i) {
-            const h = lsState.highlights[i];
-            if (!h) return;
-            if (h.embedUrl) {
-                lsOpenModal(h.title || 'Highlight', `
-                    <div class="aspect-video w-full rounded-xl overflow-hidden bg-black">
-                        <iframe src="${lsEsc(lsUrl(h.embedUrl))}" class="w-full h-full" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe>
-                    </div>
-                    <a href="${lsEsc(lsUrl(h.url))}" target="_blank" rel="noopener noreferrer" class="inline-block mt-3 text-xs text-emerald-400 hover:underline">Open original source <i class="fa-solid fa-arrow-up-right-from-square ml-1"></i></a>`);
-            } else {
-                window.open(lsUrl(h.url), '_blank', 'noopener');
-            }
-        }
-
-        // ---- entry point (called by switchView) -----------------------------
+        // Called by switchView. Loads the frame the first time the tab is opened,
+        // and leaves it alone afterwards so live-sync refreshes don't reset it.
         function initLiveScores() {
-            if (!lsState.inited) {
-                lsState.inited = true;
-                lsState.date = lsToday();
-                lsEl('ls-date').value = lsState.date;
-                lsTab('scores');          // also triggers the first load
-                return;
-            }
-            lsLoadActiveTab(false);
+            shApplyDark();
+            shLoad(false);
         }
 
         window.onload = async function() {
