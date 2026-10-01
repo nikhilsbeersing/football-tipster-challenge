@@ -1908,14 +1908,15 @@
             }
 
             const now = new Date();
-            const firstDeadline = new Date(matches[0].deadline);
+            const earliestMatch = matches.reduce((a, b) => new Date(a.deadline) < new Date(b.deadline) ? a : b);
+            const firstDeadline = new Date(earliestMatch.deadline);
 
             if (now < firstDeadline && (!currentUser || currentUser.role !== 'admin')) {
                 modalContent.innerHTML = `
                     <div class="bg-amber-500/10 border border-amber-500/30 text-amber-300 p-4 rounded-xl text-center space-y-1">
                         <i class="fa-solid fa-lock text-xl mb-1"></i>
                         <p class="font-bold">Predictions Locked</p>
-                        <p class="text-[11px] text-slate-300">Tips for this gameweek can only be viewed after the deadline has passed (${matches[0].deadline.replace('T', ' ')}).</p>
+                        <p class="text-[11px] text-slate-300">Tips for this gameweek can only be viewed after the deadline has passed (${earliestMatch.deadline.replace('T', ' ')}).</p>
                     </div>
                 `;
                 document.getElementById('user-preds-modal').classList.remove('hidden');
@@ -1984,6 +1985,7 @@
             const prevFilterComp = filterComp ? filterComp.value : '';
             const prevExcelComp = excelComp ? excelComp.value : '';
             const prevDelGwComp = delGwComp ? delGwComp.value : '';
+            const prevFilterGw = filterGw ? filterGw.value : '';   // the gameweek you had open, e.g. "2"
 
             const compOptions = db.competitions.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
             if (addComp) addComp.innerHTML = compOptions;
@@ -2018,6 +2020,12 @@
             }).join('');
             
             if (filterGw) filterGw.innerHTML = gwOptions;
+
+            // Restore the gameweek you had open (this was missing, which is why
+            // the "Enter Results" panel kept snapping back to Gameweek 1 as soon
+            // as you picked a different one — every re-render rebuilt this list
+            // and always left it on its first option).
+            if (filterGw) filterGw.value = gws.includes(parseInt(prevFilterGw)) ? prevFilterGw : String(gws[0]);
 
             const delGwNum = document.getElementById('delete-gw-number');
             if (delGwNum) delGwNum.innerHTML = gwOptions;
