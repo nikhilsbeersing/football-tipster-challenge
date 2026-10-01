@@ -776,19 +776,19 @@
         </div>
     </div>
 
-    <!-- USER PREDICTIONS INSPECT MODAL -->
-    <div id="user-preds-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+    <!-- USER PROFILE MODAL -->
+    <div id="user-preds-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-start sm:items-center justify-center p-3 overflow-y-auto">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-2xl w-full my-6 p-5 sm:p-6 shadow-2xl space-y-4">
             <div class="flex items-center justify-between border-b border-slate-700 pb-3">
-                <h3 id="user-preds-title" class="text-base font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-eye text-emerald-400"></i> Tipster Predictions
+                <h3 id="user-preds-title" class="text-base font-bold text-white flex items-center gap-2 truncate">
+                    <i class="fa-solid fa-user text-emerald-400 shrink-0"></i> <span class="truncate">Tipster Profile</span>
                 </h3>
-                <button onclick="closeUserPredsModal()" class="text-slate-400 hover:text-white">
+                <button onclick="closeUserPredsModal()" class="text-slate-400 hover:text-white shrink-0">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-            <div id="user-preds-content" class="text-xs space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
-                <!-- Predictions rendered dynamically -->
+            <div id="user-preds-content" class="text-xs space-y-5 max-h-[75vh] overflow-y-auto custom-scrollbar pr-1">
+                <!-- Profile rendered dynamically -->
             </div>
             <button onclick="closeUserPredsModal()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded-xl text-xs">
                 Close
@@ -1872,9 +1872,8 @@
                 const nameInner = `${u.displayName}
                                 <span class="text-[10px] text-slate-500 font-normal">(@${u.username})</span>
                                 ${u.role === 'admin' ? '<span class="text-[9px] bg-amber-500/20 text-amber-400 px-1 py-0.5 rounded border border-amber-500/30 font-mono">ADMIN</span>' : ''}`;
-                const nameCell = combined
-                    ? `<span class="flex items-center gap-1.5">${nameInner}</span>`
-                    : `<button onclick="inspectUserPredictions('${u.username}', '${selectedCompId}', ${selectedGW})" class="text-left hover:text-emerald-400 hover:underline transition flex items-center gap-1.5">${nameInner}</button>`;
+                // Full profile is available for anyone, in both the single-competition and combined views.
+                const nameCell = `<button onclick="openUserProfile('${u.username}')" class="text-left hover:text-emerald-400 hover:underline transition flex items-center gap-1.5">${nameInner}</button>`;
 
                 return `
                     <tr class="hover:bg-slate-700/40 transition ${isCurrent ? 'bg-emerald-950/30 border-l-4 border-emerald-500' : ''}">
@@ -1891,59 +1890,184 @@
             }).join('');
         }
 
-        function inspectUserPredictions(targetUsername, compId, gw) {
-            const matches = db.matches.filter(m => m.compId === compId && m.gameweek === gw);
-            const modalContent = document.getElementById('user-preds-content');
-            const titleEl = document.getElementById('user-preds-title');
-            
-            const comp = db.competitions.find(c => c.id === compId);
-            const gwLabel = (comp && comp.gwLabels && comp.gwLabels[gw]) ? comp.gwLabels[gw] : `Gameweek ${gw}`;
-            
-            titleEl.innerText = `${targetUsername}'s Predictions - ${gwLabel}`;
+        // ---- Full tipster profile: lifetime stats + a paginated prediction history ----
+        const PROFILE_PAGE_SIZE = 30;
+        const profileState = { username: null, page: 1, rows: [] };
 
-            if (matches.length === 0) {
-                modalContent.innerHTML = `<p class="text-slate-400 text-center py-4">No matches found for this gameweek.</p>`;
-                document.getElementById('user-preds-modal').classList.remove('hidden');
-                return;
-            }
+        function resultOf(match) {
+            if (match.status !== 'FINISHED') return null;
+            return match.scoreHome > match.scoreAway ? '1' : match.scoreHome < match.scoreAway ? '2' : 'X';
+        }
+        function pickLabel(pick) {
+            return pick === '1' ? 'Home Win (1)' : pick === '2' ? 'Away Win (2)' : pick === 'X' ? 'Draw (X)' : 'No Prediction';
+        }
+        function isoWeekLabel(d) {
+            const dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            const day = dt.getUTCDay() || 7;
+            dt.setUTCDate(dt.getUTCDate() + 4 - day);
+            const yearStart = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
+            const week = Math.ceil((((dt - yearStart) / 86400000) + 1) / 7);
+            return `${dt.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+        }
 
+        // Every match this tipster has a pick for, newest kickoff first — the same
+        // list both the stats and the 30-per-page history are built from, so the
+        // two always agree with each other.
+        function buildProfileRows(username) {
+            const tips = db.predictions[username] || {};
+            const canSeeLocked = currentUser && (currentUser.role === 'admin' || currentUser.username === username);
             const now = new Date();
-            const earliestMatch = matches.reduce((a, b) => new Date(a.deadline) < new Date(b.deadline) ? a : b);
-            const firstDeadline = new Date(earliestMatch.deadline);
+            return db.matches
+                .filter(m => tips[m.id] !== undefined && (canSeeLocked || new Date(m.deadline) <= now))
+                .map(m => {
+                    const pick = tips[m.id];
+                    const result = resultOf(m);
+                    const correct = result !== null && pick === result;
+                    const points = correct ? m.odds[result] : 0;
+                    const comp = db.competitions.find(c => c.id === m.compId);
+                    return { match: m, comp, pick, result, correct, points, date: new Date(m.deadline) };
+                })
+                .sort((a, b) => b.date - a.date);
+        }
 
-            if (now < firstDeadline && (!currentUser || currentUser.role !== 'admin')) {
-                modalContent.innerHTML = `
-                    <div class="bg-amber-500/10 border border-amber-500/30 text-amber-300 p-4 rounded-xl text-center space-y-1">
-                        <i class="fa-solid fa-lock text-xl mb-1"></i>
-                        <p class="font-bold">Predictions Locked</p>
-                        <p class="text-[11px] text-slate-300">Tips for this gameweek can only be viewed after the deadline has passed (${earliestMatch.deadline.replace('T', ' ')}).</p>
+        function groupStats(rows, keyFn) {
+            const byKey = {};
+            rows.forEach(r => {
+                const k = keyFn(r.date);
+                if (!byKey[k]) byKey[k] = { predicted: 0, correct: 0, points: 0 };
+                byKey[k].predicted++;
+                if (r.result !== null) { if (r.correct) byKey[k].correct++; byKey[k].points += r.points; }
+            });
+            return Object.entries(byKey).sort((a, b) => a[0] < b[0] ? 1 : -1);   // most recent period first
+        }
+
+        function periodTable(title, entries, limit) {
+            const rows = entries.slice(0, limit).map(([label, s]) => `
+                <tr class="border-b border-slate-700/40 last:border-0">
+                    <td class="py-1.5 pr-2 text-slate-300">${escHtml(label)}</td>
+                    <td class="py-1.5 px-2 text-center font-mono">${s.predicted}</td>
+                    <td class="py-1.5 px-2 text-center font-mono">${s.correct}</td>
+                    <td class="py-1.5 px-2 text-center font-mono text-slate-400">${s.predicted ? ((s.correct / s.predicted) * 100).toFixed(0) : 0}%</td>
+                    <td class="py-1.5 pl-2 text-right font-mono text-emerald-400">${s.points.toFixed(2)}</td>
+                </tr>`).join('');
+            return `
+                <div>
+                    <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1.5">${title}</p>
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-[11px]">
+                            <thead><tr class="text-slate-500 text-left border-b border-slate-700">
+                                <th class="py-1 pr-2 font-medium">Period</th>
+                                <th class="py-1 px-2 font-medium text-center">Picks</th>
+                                <th class="py-1 px-2 font-medium text-center">Correct</th>
+                                <th class="py-1 px-2 font-medium text-center">Rate</th>
+                                <th class="py-1 pl-2 font-medium text-right">Points</th>
+                            </tr></thead>
+                            <tbody>${rows || `<tr><td colspan="5" class="py-3 text-center text-slate-500">No settled picks yet.</td></tr>`}</tbody>
+                        </table>
                     </div>
-                `;
-                document.getElementById('user-preds-modal').classList.remove('hidden');
-                return;
-            }
+                </div>`;
+        }
 
-            const userTips = db.predictions[targetUsername] || {};
+        function openUserProfile(username) {
+            const profile = allProfiles.find(p => p.username === username);
+            const titleEl = document.getElementById('user-preds-title');
+            titleEl.innerHTML = `<span class="truncate">${escHtml(profile?.displayName || username)}'s Profile</span> <span class="text-[11px] text-slate-500 font-normal shrink-0">@${escHtml(username)}</span>`;
 
-            modalContent.innerHTML = matches.map((match, idx) => {
-                const pick = userTips[match.id];
-                let pickDisplay = pick ? (pick === '1' ? 'Home Win (1)' : pick === '2' ? 'Away Win (2)' : 'Draw (X)') : 'No Prediction';
-                
+            profileState.username = username;
+            profileState.page = 1;
+            profileState.rows = buildProfileRows(username);
+            renderUserProfile();
+            document.getElementById('user-preds-modal').classList.remove('hidden');
+        }
+
+        function renderUserProfile() {
+            const rows = profileState.rows;
+            const settled = rows.filter(r => r.result !== null);
+            const totalPredictions = rows.length;
+            const totalCorrect = settled.filter(r => r.correct).length;
+            const totalPoints = settled.reduce((sum, r) => sum + r.points, 0);
+            const accuracy = settled.length ? ((totalCorrect / settled.length) * 100).toFixed(1) : '0.0';
+            // ROI, as requested: total predictions made, minus total cumulative points earned.
+            const roi = totalPredictions - totalPoints;
+
+            const statCard = (label, value, cls = 'text-white') => `
+                <div class="bg-slate-900/70 border border-slate-700/60 rounded-xl p-3 text-center">
+                    <p class="text-[9px] uppercase tracking-wider text-slate-500 font-bold">${label}</p>
+                    <p class="text-sm font-extrabold mt-1 ${cls}">${value}</p>
+                </div>`;
+
+            const stats = `
+                <div class="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                    ${statCard('Total Predictions', totalPredictions)}
+                    ${statCard('Total Correct', totalCorrect)}
+                    ${statCard('Accuracy', accuracy + '%')}
+                    ${statCard('Total Points', totalPoints.toFixed(2), 'text-emerald-400')}
+                    ${statCard('ROI', (roi >= 0 ? '+' : '') + roi.toFixed(2), roi >= 0 ? 'text-emerald-400' : 'text-rose-400')}
+                </div>
+                <p class="text-[10px] text-slate-500 -mt-3">ROI here is total predictions minus total cumulative points (not a percentage).</p>`;
+
+            const breakdowns = `
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    ${periodTable('By week', groupStats(settled, d => isoWeekLabel(d)), 8)}
+                    ${periodTable('By month', groupStats(settled, d => d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })), 12)}
+                    ${periodTable('By year', groupStats(settled, d => String(d.getFullYear())), 10)}
+                </div>`;
+
+            const totalPages = Math.max(1, Math.ceil(rows.length / PROFILE_PAGE_SIZE));
+            if (profileState.page > totalPages) profileState.page = totalPages;
+            const start = (profileState.page - 1) * PROFILE_PAGE_SIZE;
+            const pageRows = rows.slice(start, start + PROFILE_PAGE_SIZE);
+
+            const historyRows = pageRows.map(r => {
+                const statusHtml = r.result === null
+                    ? '<span class="text-[9px] text-amber-400">Pending</span>'
+                    : r.correct
+                        ? `<span class="text-[9px] font-bold text-emerald-400">+${r.points.toFixed(2)}</span>`
+                        : '<span class="text-[9px] text-rose-400">Missed</span>';
                 return `
-                    <div class="bg-slate-900 p-3 rounded-xl border border-slate-700/80 flex items-center justify-between">
-                        <div>
-                            <p class="text-[10px] text-emerald-400 font-semibold">Match #${idx + 1}</p>
-                            <p class="font-bold text-white text-xs">${match.homeTeam} vs ${match.awayTeam}</p>
-                        </div>
-                        <div class="text-right">
-                            <span class="text-[10px] text-slate-400 block">Selection</span>
-                            <span class="font-mono font-bold text-xs ${pick ? 'text-emerald-400' : 'text-slate-500'}">${pickDisplay}</span>
-                        </div>
-                    </div>
-                `;
+                    <tr class="border-b border-slate-700/40 last:border-0">
+                        <td class="py-1.5 pr-2 text-slate-400 whitespace-nowrap">${r.match.deadline.replace('T', ' ')}</td>
+                        <td class="py-1.5 px-2 text-slate-300 truncate max-w-[90px]">${escHtml(r.comp?.name || '')}</td>
+                        <td class="py-1.5 px-2 font-semibold text-white truncate max-w-[160px]">${escHtml(r.match.homeTeam)} v ${escHtml(r.match.awayTeam)}</td>
+                        <td class="py-1.5 px-2 font-mono text-slate-300">${pickLabel(r.pick)}</td>
+                        <td class="py-1.5 pl-2 text-right">${statusHtml}</td>
+                    </tr>`;
             }).join('');
 
-            document.getElementById('user-preds-modal').classList.remove('hidden');
+            const history = `
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">All predictions (${rows.length})</p>
+                        <p class="text-[10px] text-slate-500">Page ${profileState.page} of ${totalPages}</p>
+                    </div>
+                    <div class="overflow-x-auto custom-scrollbar border border-slate-700/60 rounded-xl">
+                        <table class="w-full text-[11px]">
+                            <thead><tr class="text-slate-500 text-left border-b border-slate-700 bg-slate-900/50">
+                                <th class="py-1.5 pr-2 pl-2 font-medium">Kickoff</th>
+                                <th class="py-1.5 px-2 font-medium">Competition</th>
+                                <th class="py-1.5 px-2 font-medium">Match</th>
+                                <th class="py-1.5 px-2 font-medium">Pick</th>
+                                <th class="py-1.5 pl-2 pr-2 font-medium text-right">Result</th>
+                            </tr></thead>
+                            <tbody>${historyRows || `<tr><td colspan="5" class="py-4 text-center text-slate-500">No predictions to show yet.</td></tr>`}</tbody>
+                        </table>
+                    </div>
+                    <div class="flex items-center justify-center gap-2 mt-2">
+                        <button onclick="profilePage(-1)" ${profileState.page <= 1 ? 'disabled' : ''} class="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-slate-700 hover:bg-slate-600 text-white disabled:opacity-40 disabled:cursor-not-allowed">
+                            <i class="fa-solid fa-chevron-left mr-1"></i>Prev
+                        </button>
+                        <button onclick="profilePage(1)" ${profileState.page >= totalPages ? 'disabled' : ''} class="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-slate-700 hover:bg-slate-600 text-white disabled:opacity-40 disabled:cursor-not-allowed">
+                            Next<i class="fa-solid fa-chevron-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>`;
+
+            document.getElementById('user-preds-content').innerHTML = stats + breakdowns + history;
+        }
+
+        function profilePage(delta) {
+            profileState.page += delta;
+            renderUserProfile();
         }
 
         function closeUserPredsModal() {
