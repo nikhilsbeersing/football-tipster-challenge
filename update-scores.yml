@@ -1,0 +1,22 @@
+name: Update match scores
+
+on:
+  schedule:
+    # Every 30 minutes. GitHub runs scheduled workflows on a best-effort
+    # basis and this can lag by a few minutes at busy times — that's normal.
+    - cron: '*/30 * * * *'
+  workflow_dispatch: {}   # lets you trigger a run manually from the Actions tab, for testing
+
+jobs:
+  update-scores:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run update-scores.js
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: node scripts/update-scores.js

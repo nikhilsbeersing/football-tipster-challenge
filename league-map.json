@@ -1,0 +1,6 @@
+{
+  "_readme": "Map each of your site's competition NAMES (exactly as typed in Admin > Competitions & GWs) to its API-Football league id and season. Find league ids at https://dashboard.api-football.com or via GET /leagues?search=<name>. Season is the year the season STARTS (European season 2026/27 -> 2026).",
+  "_example": {
+    "Premier League (2026/27)": { "league": 39, "season": 2026 }
+  }
+}
