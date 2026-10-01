@@ -429,6 +429,9 @@
                 <button onclick="switchAdminTab('users')" id="tab-admin-users" class="px-4 py-2 text-xs font-semibold border-b-2 border-transparent text-slate-400 hover:text-white whitespace-nowrap transition">
                     <i class="fa-solid fa-users mr-1.5"></i> Users Manager
                 </button>
+                <button onclick="switchAdminTab('openfootball')" id="tab-admin-openfootball" class="px-4 py-2 text-xs font-semibold border-b-2 border-transparent text-slate-400 hover:text-white whitespace-nowrap transition">
+                    <i class="fa-solid fa-cloud-arrow-down mr-1.5"></i> Import (openfootball)
+                </button>
             </div>
 
             <!-- ADMIN TAB: Fixtures -->
@@ -660,6 +663,97 @@
                     </div>
                 </div>
             </div>
+
+            <!-- ADMIN TAB: openfootball import helper (new, additive — does not touch the other tabs) -->
+            <div id="admin-sec-openfootball" class="hidden space-y-6">
+                <div class="bg-sky-500/10 border border-sky-500/30 rounded-2xl p-4 text-[11px] text-sky-200 leading-relaxed">
+                    <i class="fa-solid fa-circle-info mr-1"></i>
+                    Pulls free, public-domain fixtures &amp; results from
+                    <a href="https://github.com/openfootball/football.json" target="_blank" rel="noopener noreferrer" class="underline font-semibold">openfootball/football.json</a>
+                    — no API key, no rate limit. It's updated once a day, so this is for fixtures and final scores, not live in-play updates.
+                    Nothing here changes a match until you press an import or fill button below, and results still need your own "Settle All GW Scores" button to count.
+                </div>
+
+                <!-- Step 1: load a league/season -->
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-lg space-y-3">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2 border-b border-slate-700 pb-2">
+                        <i class="fa-solid fa-earth-africa text-sky-400"></i> 1. Choose a league &amp; season
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div>
+                            <label class="block text-[10px] text-slate-400 font-semibold uppercase mb-1">League</label>
+                            <select id="of-league" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg py-2 px-3 text-white"></select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-400 font-semibold uppercase mb-1">Season</label>
+                            <select id="of-season" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg py-2 px-3 text-white"></select>
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="ofFetchLeague()" class="w-full bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold py-2.5 rounded-lg transition shadow-md">
+                                <i class="fa-solid fa-cloud-arrow-down mr-1.5"></i> Load fixtures
+                            </button>
+                        </div>
+                    </div>
+                    <p id="of-status" class="text-[11px] text-slate-400"></p>
+                </div>
+
+                <!-- Step 2: import fixtures as new matches -->
+                <div id="of-import-panel" class="hidden bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-lg space-y-3">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2 border-b border-slate-700 pb-2">
+                        <i class="fa-solid fa-plus-circle text-emerald-400"></i> 2. Import a round as new fixtures
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                        <div>
+                            <label class="block text-[10px] text-slate-400 font-semibold uppercase mb-1">Round</label>
+                            <select id="of-round" onchange="ofRenderRound()" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg py-2 px-3 text-white"></select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-400 font-semibold uppercase mb-1">Import into competition</label>
+                            <select id="of-import-comp" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg py-2 px-3 text-white"></select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-400 font-semibold uppercase mb-1">As gameweek</label>
+                            <input type="number" id="of-import-gw" min="1" max="60" value="1" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg py-2 px-3 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-400 font-semibold uppercase mb-1">Default odds (1 / X / 2)</label>
+                            <div class="flex gap-1">
+                                <input type="number" step="0.01" id="of-odds1" value="2.00" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg py-2 px-1 text-white text-center">
+                                <input type="number" step="0.01" id="of-oddsx" value="3.20" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg py-2 px-1 text-white text-center">
+                                <input type="number" step="0.01" id="of-odds2" value="3.40" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg py-2 px-1 text-white text-center">
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-slate-500">Kickoff times come from the source where available (otherwise 15:00 is used as a placeholder) — double-check deadlines before relying on them. Odds above apply to every fixture you import; edit individual matches afterwards in "Gameweeks &amp; Matches" as usual.</p>
+                    <div id="of-round-fixtures" class="space-y-1.5 max-h-80 overflow-y-auto custom-scrollbar pr-1"></div>
+                    <button onclick="ofImportSelected()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2.5 rounded-xl transition shadow-lg">
+                        <i class="fa-solid fa-file-import mr-1.5"></i> Import checked fixtures
+                    </button>
+                </div>
+
+                <!-- Step 3: auto-fill results for an existing gameweek -->
+                <div id="of-fill-panel" class="hidden bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-lg space-y-3">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2 border-b border-slate-700 pb-2">
+                        <i class="fa-solid fa-pen-to-square text-amber-400"></i> 3. Auto-fill results for one of your gameweeks
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[10px] text-slate-400 font-semibold uppercase mb-1">Your competition</label>
+                            <select id="of-fill-comp" onchange="ofPopulateFillGw()" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg py-2 px-3 text-white"></select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-400 font-semibold uppercase mb-1">Gameweek</label>
+                            <select id="of-fill-gw" onchange="ofRenderFillCompare()" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg py-2 px-3 text-white"></select>
+                        </div>
+                    </div>
+                    <div id="of-fill-compare" class="space-y-1.5 max-h-80 overflow-y-auto custom-scrollbar pr-1"></div>
+                    <button onclick="ofFillSelected()" class="w-full bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold py-2.5 rounded-xl transition shadow-lg">
+                        <i class="fa-solid fa-arrow-right-to-bracket mr-1.5"></i> Fill checked scores into the results editor
+                    </button>
+                    <p class="text-[10px] text-slate-500">This only fills the score boxes in "Gameweeks &amp; Matches" so you can review them — it does not settle anything by itself. Press your usual "Settle All GW Scores" button there when you're happy.</p>
+                </div>
+            </div>
+
         </section>
 
     </main>
@@ -2075,7 +2169,7 @@
         }
 
         function switchAdminTab(tab) {
-            ['fixtures', 'excel-import', 'approvals', 'competitions', 'users'].forEach(t => {
+            ['fixtures', 'excel-import', 'approvals', 'competitions', 'users', 'openfootball'].forEach(t => {
                 const sec = document.getElementById(`admin-sec-${t}`);
                 if (sec) sec.classList.add('hidden');
 
@@ -2093,6 +2187,7 @@
             if (tab === 'approvals') renderPendingApprovals();
             if (tab === 'competitions') renderAdminCompetitions();
             if (tab === 'users') renderAdminUsers();
+            if (tab === 'openfootball') ofOnTabOpen();
         }
 
         function populateAdminDropdowns() {
@@ -2153,6 +2248,252 @@
 
             const delGwNum = document.getElementById('delete-gw-number');
             if (delGwNum) delGwNum.innerHTML = gwOptions;
+        }
+
+        // =====================================================================
+        // OPENFOOTBALL IMPORT HELPER — new, additive admin tab.
+        // Reads public fixtures/results from openfootball/football.json (free,
+        // no key, no rate limit, updated once a day — not live). It only ever
+        // writes brand-new match objects (Step 2) or fills the SAME score boxes
+        // your own "Enter Results" panel already uses (Step 3); it never edits
+        // or deletes an existing match on its own.
+        // =====================================================================
+        const OF_LEAGUES = [
+            { code: 'en.1', label: 'England — Premier League' },
+            { code: 'en.2', label: 'England — Championship' },
+            { code: 'en.3', label: 'England — League One' },
+            { code: 'en.4', label: 'England — League Two' },
+            { code: 'de.1', label: 'Germany — Bundesliga' },
+            { code: 'de.2', label: 'Germany — 2. Bundesliga' },
+            { code: 'es.1', label: 'Spain — La Liga' },
+            { code: 'es.2', label: 'Spain — Segunda División' },
+            { code: 'it.1', label: 'Italy — Serie A' },
+            { code: 'it.2', label: 'Italy — Serie B' },
+            { code: 'fr.1', label: 'France — Ligue 1' },
+            { code: 'fr.2', label: 'France — Ligue 2' }
+        ];
+
+        const ofState = { data: null, matches: [], inited: false };
+
+        function ofSeasonOptions() {
+            // European-style seasons (Aug–May). "Current" is whichever one we're inside right now.
+            const now = new Date();
+            const startYear = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;  // season flips around July
+            const seasons = [];
+            for (let y = startYear + 1; y >= startYear - 3; y--) seasons.push(`${y - 1}-${String(y).slice(2)}`);
+            return seasons;
+        }
+
+        function ofOnTabOpen() {
+            if (!ofState.inited) {
+                ofState.inited = true;
+                document.getElementById('of-league').innerHTML = OF_LEAGUES.map(l => `<option value="${l.code}">${escHtml(l.label)}</option>`).join('');
+                const seasons = ofSeasonOptions();
+                document.getElementById('of-season').innerHTML = seasons.map(s => `<option value="${s}">${s}</option>`).join('');
+            }
+            ofPopulateFillComp();
+        }
+
+        async function ofFetchLeague() {
+            const code = document.getElementById('of-league').value;
+            const season = document.getElementById('of-season').value;
+            const label = OF_LEAGUES.find(l => l.code === code)?.label || code;
+            const status = document.getElementById('of-status');
+            status.textContent = 'Loading…';
+            status.className = 'text-[11px] text-slate-400';
+
+            try {
+                const url = `https://raw.githubusercontent.com/openfootball/football.json/master/${season}/${code}.json`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(res.status === 404 ? 'not-found' : `HTTP ${res.status}`);
+                const json = await res.json();
+                const matches = Array.isArray(json.matches) ? json.matches : [];
+                if (!matches.length) throw new Error('empty');
+
+                ofState.data = json;
+                ofState.matches = matches;
+                status.textContent = `Loaded ${json.name || label} (${season}) — ${matches.length} matches.`;
+                status.className = 'text-[11px] text-emerald-400';
+
+                const rounds = [...new Set(matches.map(m => m.round || 'Fixtures'))];
+                document.getElementById('of-round').innerHTML = rounds.map(r => `<option value="${escHtml(r)}">${escHtml(r)}</option>`).join('');
+                document.getElementById('of-import-panel').classList.remove('hidden');
+                document.getElementById('of-fill-panel').classList.remove('hidden');
+                ofRenderRound();
+                ofPopulateFillComp();
+            } catch (e) {
+                ofState.data = null;
+                ofState.matches = [];
+                document.getElementById('of-import-panel').classList.add('hidden');
+                document.getElementById('of-fill-panel').classList.add('hidden');
+                status.textContent = e.message === 'not-found' || e.message === 'empty'
+                    ? `No data found for ${label} in ${season}. That league or season may not be covered — try a different one.`
+                    : "Couldn't reach openfootball right now. Check your connection and try again.";
+                status.className = 'text-[11px] text-rose-400';
+            }
+        }
+
+        function ofNormalizeTeam(name) {
+            return String(name || '')
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')         // strip accents
+                .toLowerCase()
+                .replace(/\b(fc|cf|afc|sc|ac|cd|ud|sd|calcio|club)\b/g, '')
+                .replace(/[^a-z0-9]+/g, ' ')
+                .trim();
+        }
+
+        function ofDeadlineIso(fixture) {
+            const time = fixture.time || '15:00';
+            return `${fixture.date}T${time}`;
+        }
+
+        function ofRoundNumber(round) {
+            const m = String(round || '').match(/(\d+)/);
+            return m ? parseInt(m[1]) : 1;
+        }
+
+        function ofRenderRound() {
+            const round = document.getElementById('of-round').value;
+            document.getElementById('of-import-gw').value = ofRoundNumber(round);
+            const fixtures = ofState.matches.filter(m => (m.round || 'Fixtures') === round);
+            document.getElementById('of-round-fixtures').innerHTML = fixtures.map((f, i) => {
+                const score = f.score?.ft ? ` <span class="text-slate-500">(${f.score.ft[0]}-${f.score.ft[1]} FT)</span>` : '';
+                return `
+                    <label class="flex items-center gap-2.5 bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-xs cursor-pointer">
+                        <input type="checkbox" checked data-of-fixture="${i}" class="accent-emerald-500 shrink-0">
+                        <span class="text-slate-400 w-28 shrink-0">${escHtml(f.date)}${f.time ? ' ' + escHtml(f.time) : ''}</span>
+                        <span class="text-white font-medium truncate">${escHtml(f.team1)} v ${escHtml(f.team2)}</span>${score}
+                    </label>`;
+            }).join('') || `<p class="text-xs text-slate-500 text-center py-3">No fixtures in this round.</p>`;
+            document.getElementById('of-round-fixtures').dataset.round = round;
+        }
+
+        function ofImportSelected() {
+            const round = document.getElementById('of-round-fixtures').dataset.round;
+            const fixtures = ofState.matches.filter(m => (m.round || 'Fixtures') === round);
+            const compId = document.getElementById('of-import-comp').value;
+            const gw = parseInt(document.getElementById('of-import-gw').value) || 1;
+            const odds1 = parseFloat(document.getElementById('of-odds1').value) || 2.0;
+            const oddsX = parseFloat(document.getElementById('of-oddsx').value) || 3.0;
+            const odds2 = parseFloat(document.getElementById('of-odds2').value) || 2.5;
+
+            if (!compId) { showToast("Choose which competition to import into first.", "warning"); return; }
+
+            const checked = [...document.querySelectorAll('#of-round-fixtures input[type="checkbox"]:checked')];
+            let added = 0;
+            checked.forEach(cb => {
+                const f = fixtures[parseInt(cb.dataset.ofFixture)];
+                if (!f) return;
+                db.matches.push({
+                    id: 'm-of-' + Date.now() + Math.floor(Math.random() * 1000) + added,
+                    compId,
+                    gameweek: gw,
+                    homeTeam: f.team1,
+                    awayTeam: f.team2,
+                    odds: { '1': odds1, 'X': oddsX, '2': odds2 },
+                    deadline: ofDeadlineIso(f),
+                    scoreHome: null,
+                    scoreAway: null,
+                    status: 'UPCOMING'
+                });
+                added++;
+            });
+
+            if (!added) { showToast("Check at least one fixture to import.", "warning"); return; }
+            saveDB();
+            showToast(`Imported ${added} fixture${added > 1 ? 's' : ''} into Gameweek ${gw}. Review odds and deadlines in "Gameweeks & Matches".`);
+        }
+
+        function ofPopulateFillComp() {
+            const sel = document.getElementById('of-fill-comp');
+            if (!sel) return;
+            const prev = sel.value;
+            sel.innerHTML = db.competitions.map(c => `<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
+            sel.value = db.competitions.some(c => c.id === prev) ? prev : (db.competitions[0]?.id || '');
+            ofPopulateFillGw();
+        }
+
+        function ofPopulateFillGw() {
+            const compSel = document.getElementById('of-fill-comp');
+            const gwSel = document.getElementById('of-fill-gw');
+            if (!compSel || !gwSel) return;
+            const prev = gwSel.value;
+            const gws = [...new Set(db.matches.filter(m => m.compId === compSel.value).map(m => m.gameweek))].sort((a, b) => a - b);
+            if (!gws.length) gws.push(1);
+            const comp = db.competitions.find(c => c.id === compSel.value);
+            gwSel.innerHTML = gws.map(g => {
+                const label = (comp && comp.gwLabels && comp.gwLabels[g]) ? comp.gwLabels[g] : `Gameweek ${g}`;
+                return `<option value="${g}">${label}</option>`;
+            }).join('');
+            gwSel.value = gws.includes(parseInt(prev)) ? prev : String(gws[0]);
+            ofRenderFillCompare();
+        }
+
+        // Finds the best openfootball fixture for one of your matches: both team
+        // names must normalize to the same (or containing) string. Date isn't
+        // required to match exactly, since deadlines you typed by hand may not
+        // line up to the minute with the source.
+        function ofFindFixture(match) {
+            if (!ofState.matches.length) return null;
+            const h = ofNormalizeTeam(match.homeTeam), a = ofNormalizeTeam(match.awayTeam);
+            if (!h || !a) return null;
+            const sameTeam = (x, y) => x === y || (x.length > 3 && y.includes(x)) || (y.length > 3 && x.includes(y));
+            return ofState.matches.find(f => sameTeam(ofNormalizeTeam(f.team1), h) && sameTeam(ofNormalizeTeam(f.team2), a)) || null;
+        }
+
+        function ofRenderFillCompare() {
+            const compId = document.getElementById('of-fill-comp').value;
+            const gw = parseInt(document.getElementById('of-fill-gw').value || 1);
+            const matches = db.matches.filter(m => m.compId === compId && m.gameweek === gw);
+            const box = document.getElementById('of-fill-compare');
+
+            if (!matches.length) { box.innerHTML = `<p class="text-xs text-slate-500 text-center py-3">No fixtures in this gameweek yet.</p>`; return; }
+            if (!ofState.matches.length) { box.innerHTML = `<p class="text-xs text-slate-500 text-center py-3">Load a league above first.</p>`; return; }
+
+            box.innerHTML = matches.map((m, i) => {
+                const found = ofFindFixture(m);
+                const ft = found?.score?.ft;
+                const current = (m.scoreHome !== null && m.scoreAway !== null) ? `${m.scoreHome}-${m.scoreAway}` : '—';
+                if (!found || !ft) {
+                    return `
+                        <label class="flex items-center gap-2.5 bg-slate-900/60 border border-slate-700/60 rounded-lg px-3 py-2 text-xs opacity-60">
+                            <input type="checkbox" disabled class="accent-slate-500 shrink-0">
+                            <span class="text-slate-300 flex-1 truncate">${escHtml(m.homeTeam)} v ${escHtml(m.awayTeam)}</span>
+                            <span class="text-[10px] text-slate-500">${found ? 'Not played yet' : 'No match found in source data'}</span>
+                        </label>`;
+                }
+                return `
+                    <label class="flex items-center gap-2.5 bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-xs cursor-pointer">
+                        <input type="checkbox" checked data-of-match="${m.id}" data-of-h="${ft[0]}" data-of-a="${ft[1]}" class="accent-amber-500 shrink-0">
+                        <span class="text-white font-medium flex-1 truncate">${escHtml(m.homeTeam)} v ${escHtml(m.awayTeam)}</span>
+                        <span class="text-slate-500">current: ${current}</span>
+                        <span class="text-emerald-400 font-mono font-bold">→ ${ft[0]}-${ft[1]}</span>
+                    </label>`;
+            }).join('');
+        }
+
+        function ofFillSelected() {
+            const compId = document.getElementById('of-fill-comp').value;
+            const gw = parseInt(document.getElementById('of-fill-gw').value || 1);
+            const checked = [...document.querySelectorAll('#of-fill-compare input[type="checkbox"]:checked')];
+            if (!checked.length) { showToast("Check at least one result to fill in.", "warning"); return; }
+
+            const fills = checked.map(cb => ({ id: cb.dataset.ofMatch, h: cb.dataset.ofH, a: cb.dataset.ofA }));
+
+            switchAdminTab('fixtures');
+            document.getElementById('admin-filter-comp').value = compId;
+            renderAdminMatches();                      // rebuilds the gw list for this competition
+            document.getElementById('admin-filter-gw').value = String(gw);
+            renderAdminMatches();                       // now render that gameweek's score inputs
+
+            let filled = 0;
+            fills.forEach(f => {
+                const hIn = document.getElementById(`score-h-${f.id}`);
+                const aIn = document.getElementById(`score-a-${f.id}`);
+                if (hIn && aIn) { hIn.value = f.h; aIn.value = f.a; filled++; }
+            });
+
+            showToast(`Filled ${filled} score${filled > 1 ? 's' : ''} into the editor. Review them, then press "Settle All GW Scores" when ready.`);
         }
 
         function renderAdminConsole() {
